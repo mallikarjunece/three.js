@@ -7,6 +7,10 @@
 		<title>three.js webgl - postprocessing - Screen Space Reflection</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - postprocessing - Screen Space Reflection">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_postprocessing_ssr.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_postprocessing_ssr.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 
@@ -17,19 +21,29 @@
 		SSRPass demo by <a href="https://github.com/gonnavis" target="_blank">Vis</a>.<br />
 	</div>
 
+	<script type="importmap">
+		{
+			"imports": {
+				"three": "../build/three.module.js",
+				"three/addons/": "./jsm/"
+			}
+		}
+	</script>
+
 	<script type="module">
-		import * as THREE from '../build/three.module.js';
+		import * as THREE from 'three';
 
-		import Stats from './jsm/libs/stats.module.js';
+		import Stats from 'three/addons/libs/stats.module.js';
 
-		import { OrbitControls } from './jsm/controls/OrbitControls.js';
+		import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-		import { GUI } from './jsm/libs/dat.gui.module.js';
-		import { EffectComposer } from './jsm/postprocessing/EffectComposer.js';
-		import { SSRPass } from './jsm/postprocessing/SSRPass.js';
-		import { ReflectorForSSRPass } from './jsm/objects/ReflectorForSSRPass.js';
+		import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+		import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+		import { SSRPass } from 'three/addons/postprocessing/SSRPass.js';
+		import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+		import { ReflectorForSSRPass } from 'three/addons/objects/ReflectorForSSRPass.js';
 
-		import { DRACOLoader } from './jsm/loaders/DRACOLoader.js';
+		import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
 		const params = {
 			enableSSR: true,
@@ -51,11 +65,8 @@
 
 		// Configure and create Draco decoder.
 		const dracoLoader = new DRACOLoader();
-		dracoLoader.setDecoderPath( 'js/libs/draco/' );
-		dracoLoader.setDecoderConfig( { type: 'js' } );
 
 		init();
-		animate();
 
 		function init() {
 
@@ -69,7 +80,7 @@
 			// Ground
 			const plane = new THREE.Mesh(
 				new THREE.PlaneGeometry( 8, 8 ),
-				new THREE.MeshPhongMaterial( { color: 0x999999, specular: 0x101010 } )
+				new THREE.MeshPhongMaterial( { color: 0xcbcbcb } )
 			);
 			plane.rotation.x = - Math.PI / 2;
 			plane.position.y = - 0.0001;
@@ -77,10 +88,11 @@
 			scene.add( plane );
 
 			// Lights
-			const hemiLight = new THREE.HemisphereLight( 0x443333, 0x111122 );
+			const hemiLight = new THREE.HemisphereLight( 0x8d7c7c, 0x494966, 3 );
 			scene.add( hemiLight );
 
 			const spotLight = new THREE.SpotLight();
+			spotLight.intensity = 8;
 			spotLight.angle = Math.PI / 16;
 			spotLight.penumbra = 0.5;
 			// spotLight.castShadow = true;
@@ -91,7 +103,7 @@
 
 				geometry.computeVertexNormals();
 
-				const material = new THREE.MeshStandardMaterial( { color: 0x606060 } );
+				const material = new THREE.MeshStandardMaterial( { color: 0xa5a5a5 } );
 				const mesh = new THREE.Mesh( geometry, material );
 				mesh.position.y = - 0.0365;
 				scene.add( mesh );
@@ -104,7 +116,7 @@
 
 			let geometry, material, mesh;
 
-			geometry = new THREE.BoxBufferGeometry( .05, .05, .05 );
+			geometry = new THREE.BoxGeometry( .05, .05, .05 );
 			material = new THREE.MeshStandardMaterial( { color: 'green' } );
 			mesh = new THREE.Mesh( geometry, material );
 			mesh.position.set( - .12, .025, .015 );
@@ -112,7 +124,7 @@
 			otherMeshes.push( mesh );
 			selects.push( mesh );
 
-			geometry = new THREE.IcosahedronBufferGeometry( .025, 4 );
+			geometry = new THREE.IcosahedronGeometry( .025, 4 );
 			material = new THREE.MeshStandardMaterial( { color: 'cyan' } );
 			mesh = new THREE.Mesh( geometry, material );
 			mesh.position.set( - .05, .025, .08 );
@@ -120,7 +132,7 @@
 			otherMeshes.push( mesh );
 			selects.push( mesh );
 
-			geometry = new THREE.ConeBufferGeometry( .025, .05, 64 );
+			geometry = new THREE.ConeGeometry( .025, .05, 64 );
 			material = new THREE.MeshStandardMaterial( { color: 'yellow' } );
 			mesh = new THREE.Mesh( geometry, material );
 			mesh.position.set( - .05, .025, - .055 );
@@ -128,7 +140,7 @@
 			otherMeshes.push( mesh );
 			selects.push( mesh );
 
-			geometry = new THREE.PlaneBufferGeometry( 1, 1 );
+			geometry = new THREE.PlaneGeometry( 1, 1 );
 			groundReflector = new ReflectorForSSRPass( geometry, {
 				clipBias: 0.0003,
 				textureWidth: window.innerWidth,
@@ -144,7 +156,7 @@
 			// renderer
 			renderer = new THREE.WebGLRenderer( { antialias: false } );
 			renderer.setSize( window.innerWidth, window.innerHeight );
-			renderer.outputEncoding = THREE.sRGBEncoding;
+			renderer.setAnimationLoop( animate );
 			container.appendChild( renderer.domElement );
 
 			//
@@ -171,12 +183,12 @@
 				camera,
 				width: innerWidth,
 				height: innerHeight,
-				encoding: THREE.sRGBEncoding,
 				groundReflector: params.groundReflector ? groundReflector : null,
 				selects: params.groundReflector ? selects : null
 			} );
 
 			composer.addPass( ssrPass );
+			composer.addPass( new OutputPass() );
 
 			// GUI
 
@@ -198,6 +210,7 @@
 
 			} );
 			ssrPass.thickness = 0.018;
+			gui.add( ssrPass, 'resolutionScale' ).min( 0 ).max( 1 );
 			gui.add( ssrPass, 'thickness' ).min( 0 ).max( .1 ).step( .0001 );
 			ssrPass.infiniteThick = false;
 			gui.add( ssrPass, 'infiniteThick' );
@@ -248,7 +261,7 @@
 				'Metalness': SSRPass.OUTPUT.Metalness,
 			} ).onChange( function ( value ) {
 
-				ssrPass.output = parseInt( value );
+				ssrPass.output = value;
 
 			} );
 			ssrPass.opacity = 1;
@@ -278,8 +291,6 @@
 		}
 
 		function animate() {
-
-			requestAnimationFrame( animate );
 
 			stats.begin();
 			render();

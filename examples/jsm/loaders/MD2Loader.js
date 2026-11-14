@@ -5,7 +5,7 @@ import {
 	Float32BufferAttribute,
 	Loader,
 	Vector3
-} from '../../../build/three.module.js';
+} from 'three';
 
 const _normalData = [
 	[ - 0.525731, 0.000000, 0.850651 ], [ - 0.442863, 0.238856, 0.864188 ],
@@ -91,19 +91,51 @@ const _normalData = [
 	[ - 0.587785, - 0.425325, - 0.688191 ], [ - 0.688191, - 0.587785, - 0.425325 ]
 ];
 
+/**
+ * A loader for the MD2 format.
+ *
+ * The loader represents the animations of the MD2 asset as an array of animation
+ * clips and stores them in the `animations` property of the geometry.
+ *
+ * ```js
+ * const loader = new MD2Loader();
+ * const geometry = await loader.loadAsync( './models/md2/ogro/ogro.md2' );
+ *
+ * const animations = geometry.animations;
+ * ```
+ *
+ * @augments Loader
+ * @three_import import { MD2Loader } from 'three/addons/loaders/MD2Loader.js';
+ */
 class MD2Loader extends Loader {
 
+	/**
+	 * Constructs a new MD2 loader.
+	 *
+	 * @param {LoadingManager} [manager] - The loading manager.
+	 */
 	constructor( manager ) {
 
 		super( manager );
 
 	}
 
+	/**
+	 * Starts loading from the given URL and passes the loaded MD2 asset
+	 * to the `onLoad()` callback.
+	 *
+	 * @param {string} url - The path/URL of the file to be loaded. This can also be a data URI.
+	 * @param {function(BufferGeometry)} onLoad - Executed when the loading process has been finished.
+	 * @param {onProgressCallback} [onProgress] - Executed while the loading is in progress.
+	 * @param {onErrorCallback} [onError] - Executed when errors occur.
+	 */
 	load( url, onLoad, onProgress, onError ) {
 
 		const scope = this;
 
 		const loader = new FileLoader( scope.manager );
+		loader.setPriority( scope.priority );
+		loader.setCache( scope.cache );
 		loader.setPath( scope.path );
 		loader.setResponseType( 'arraybuffer' );
 		loader.setRequestHeader( scope.requestHeader );
@@ -134,6 +166,12 @@ class MD2Loader extends Loader {
 
 	}
 
+	/**
+	 * Parses the given MD2 data and returns a geometry.
+	 *
+	 * @param {ArrayBuffer} buffer - The raw MD2 data as an array buffer.
+	 * @return {BufferGeometry} The parsed geometry data.
+	 */
 	parse( buffer ) {
 
 		const data = new DataView( buffer );
@@ -243,7 +281,7 @@ class MD2Loader extends Loader {
 
 			for ( let j = 0; j < 16; j ++ ) {
 
-				const character = data.getUint8( offset + j, true );
+				const character = data.getUint8( offset + j );
 				if ( character === 0 ) break;
 
 				string[ j ] = character;
@@ -260,10 +298,10 @@ class MD2Loader extends Loader {
 
 			for ( let j = 0; j < header.num_vertices; j ++ ) {
 
-				let x = data.getUint8( offset ++, true );
-				let y = data.getUint8( offset ++, true );
-				let z = data.getUint8( offset ++, true );
-				const n = _normalData[ data.getUint8( offset ++, true ) ];
+				let x = data.getUint8( offset ++ );
+				let y = data.getUint8( offset ++ );
+				let z = data.getUint8( offset ++ );
+				const n = _normalData[ data.getUint8( offset ++ ) ];
 
 				x = x * scale.x + translation.x;
 				y = y * scale.y + translation.y;
@@ -388,7 +426,7 @@ class MD2Loader extends Loader {
 		geometry.morphAttributes.normal = morphNormals;
 		geometry.morphTargetsRelative = false;
 
-		geometry.animations = AnimationClip.CreateClipsFromMorphTargetSequences( frames, 10 );
+		geometry.animations = AnimationClip.CreateClipsFromMorphTargetSequences( frames, 10, false );
 
 		return geometry;
 

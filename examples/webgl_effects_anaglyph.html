@@ -4,19 +4,32 @@
 		<title>three.js webgl - effects - anaglyph</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - effects - anaglyph">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_effects_anaglyph.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_effects_anaglyph.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 	<body>
 		<div id="info">
 			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - effects - anaglyph<br/>
-			skybox by <a href="http://ict.debevec.org/~debevec/" target="_blank" rel="noopener">Paul Debevec</a>
+			skybox by <a href="https://www.pauldebevec.com/" target="_blank" rel="noopener">Paul Debevec</a>
 		</div>
+
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
 
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import { AnaglyphEffect } from './jsm/effects/AnaglyphEffect.js';
+			import { AnaglyphEffect } from 'three/addons/effects/AnaglyphEffect.js';
 
 			let container, camera, scene, renderer, effect;
 
@@ -31,7 +44,6 @@
 			document.addEventListener( 'mousemove', onDocumentMouseMove );
 
 			init();
-			animate();
 
 			function init() {
 
@@ -40,9 +52,8 @@
 
 				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.01, 100 );
 				camera.position.z = 3;
-				camera.focalLength = 3;
 
-				const path = "textures/cube/pisa/";
+				const path = 'textures/cube/pisa/';
 				const format = '.png';
 				const urls = [
 					path + 'px' + format, path + 'nx' + format,
@@ -78,6 +89,7 @@
 
 				renderer = new THREE.WebGLRenderer();
 				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setAnimationLoop( animate );
 				container.appendChild( renderer.domElement );
 
 				const width = window.innerWidth || 2;
@@ -85,6 +97,12 @@
 
 				effect = new AnaglyphEffect( renderer );
 				effect.setSize( width, height );
+
+				// Configure stereo parameters for physically-correct rendering
+				// eyeSep: interpupillary distance (default 0.064m / 64mm for humans)
+				// planeDistance: distance to the zero-parallax plane (objects here appear at screen depth)
+				effect.eyeSep = 0.064;
+				effect.planeDistance = 3; // Match camera distance to origin for zero parallax at scene center
 
 				//
 
@@ -114,8 +132,6 @@
 			//
 
 			function animate() {
-
-				requestAnimationFrame( animate );
 
 				render();
 

@@ -4,6 +4,10 @@
 		<title>three.js webgl - 3MF</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - 3MF">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_loader_3mf.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_loader_3mf.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 		<style>
 			body {
@@ -14,18 +18,27 @@
 	<body>
 		<div id="info">
 			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a>
-			<a href="http://3mf.io" target="_blank" rel="noopener">3MF File format</a>
+			<a href="https://3mf.io" target="_blank" rel="noopener">3MF File format</a>
 			<div>3MF loader test by <a href="https://github.com/technohippy" target="_blank" rel="noopener">technohippy</a></div>
 			<div>Files from <a href="https://github.com/3MFConsortium/3mf-samples" target="_blank" rel="noopener">3mf-samples</a></div>
 		</div>
 
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import { OrbitControls } from './jsm/controls/OrbitControls.js';
-			import { ThreeMFLoader } from './jsm/loaders/3MFLoader.js';
-			import { GUI } from './jsm/libs/dat.gui.module.js';
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+			import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js';
+			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 			let camera, scene, renderer, object, loader, controls;
 
@@ -37,6 +50,9 @@
 				'cube_gears',
 				'facecolors',
 				'multipletextures',
+				'pyramid',
+				'spinal implant',
+				'variable voronoi',
 				'vertexcolors'
 			];
 
@@ -51,8 +67,6 @@
 
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color( 0x333333 );
-
-				scene.add( new THREE.AmbientLight( 0xffffff, 0.2 ) );
 
 				camera = new THREE.PerspectiveCamera( 35, window.innerWidth / window.innerHeight, 1, 500 );
 
@@ -69,8 +83,11 @@
 				controls.enablePan = false;
 				controls.update();
 
-				const pointLight = new THREE.PointLight( 0xffffff, 0.8 );
-				camera.add( pointLight );
+				scene.add( new THREE.AmbientLight( 0xffffff, 0.6 ) );
+
+				const light = new THREE.DirectionalLight( 0xffffff, 2 );
+				light.position.set( - 1, - 2.5, 1 );
+				scene.add( light );
 
 				const manager = new THREE.LoadingManager();
 
@@ -97,7 +114,7 @@
 
 				//
 
-				const gui = new GUI( { width: 300 } );
+				const gui = new GUI();
 				gui.add( params, 'asset', assets ).onChange( function ( value ) {
 
 					loadAsset( value );

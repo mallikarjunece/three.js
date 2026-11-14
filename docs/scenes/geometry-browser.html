@@ -22,6 +22,14 @@
 		</style>
 	</head>
 	<body>
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../../build/three.module.js",
+					"three/addons/": "../../examples/jsm/"
+				}
+			}
+		</script>
 
 		<a id='newWindow' href='./geometry-browser.html' target='_blank'>Open in New Window</a>
 
@@ -29,16 +37,17 @@
 			import {
 				BoxGeometry,
 				BufferGeometry,
+				CapsuleGeometry,
 				CircleGeometry,
 				Color,
 				ConeGeometry,
 				Curve,
 				CylinderGeometry,
+				DirectionalLight,
 				DodecahedronGeometry,
 				DoubleSide,
 				ExtrudeGeometry,
 				Float32BufferAttribute,
-				FontLoader,
 				Group,
 				IcosahedronGeometry,
 				LatheGeometry,
@@ -47,17 +56,14 @@
 				Mesh,
 				MeshPhongMaterial,
 				OctahedronGeometry,
-				ParametricGeometry,
 				PerspectiveCamera,
 				PlaneGeometry,
-				PointLight,
 				RingGeometry,
 				Scene,
 				Shape,
 				ShapeGeometry,
 				SphereGeometry,
 				TetrahedronGeometry,
-				TextGeometry,
 				TorusGeometry,
 				TorusKnotGeometry,
 				TubeGeometry,
@@ -65,11 +71,10 @@
 				Vector3,
 				WireframeGeometry,
 				WebGLRenderer
-			} from '../../build/three.module.js';
+			} from 'three';
 
-			import { GUI } from '../../examples/jsm/libs/dat.gui.module.js';
-			import { OrbitControls } from '../../examples/jsm/controls/OrbitControls.js';
-			import { ParametricGeometries } from '../../examples/jsm/geometries/ParametricGeometries.js';
+			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 			const twoPi = Math.PI * 2;
 
@@ -152,6 +157,36 @@
 					folder.add( data, 'widthSegments', 1, 10 ).step( 1 ).onChange( generateGeometry );
 					folder.add( data, 'heightSegments', 1, 10 ).step( 1 ).onChange( generateGeometry );
 					folder.add( data, 'depthSegments', 1, 10 ).step( 1 ).onChange( generateGeometry );
+
+					generateGeometry();
+
+				},
+
+				CapsuleGeometry: function ( mesh ) {
+
+					const data = {
+						radius: 5,
+						height: 5,
+						capSegments: 10,
+						radialSegments: 20,
+						heightSegments: 1
+					};
+
+					function generateGeometry() {
+
+						updateGroupGeometry( mesh,
+							new CapsuleGeometry( data.radius, data.height, data.capSegments, data.radialSegments, data.heightSegments ),
+						);
+
+					}
+
+					const folder = gui.addFolder( 'THREE.CapsuleGeometry' );
+
+					folder.add( data, 'radius', 1, 30 ).onChange( generateGeometry );
+					folder.add( data, 'height', 1, 30 ).onChange( generateGeometry );
+					folder.add( data, 'capSegments', 1, 32 ).step( 1 ).onChange( generateGeometry );
+					folder.add( data, 'radialSegments', 1, 64 ).step( 1 ).onChange( generateGeometry );
+					folder.add( data, 'heightSegments', 1, 64 ).step( 1 ).onChange( generateGeometry );
 
 					generateGeometry();
 
@@ -516,78 +551,6 @@
 
 				},
 
-				TextGeometry: function ( mesh ) {
-
-					const data = {
-						text: 'TextGeometry',
-						size: 5,
-						height: 2,
-						curveSegments: 12,
-						font: 'helvetiker',
-						weight: 'regular',
-						bevelEnabled: false,
-						bevelThickness: 1,
-						bevelSize: 0.5,
-						bevelOffset: 0.0,
-						bevelSegments: 3
-					};
-
-					const fonts = [
-						'helvetiker',
-						'optimer',
-						'gentilis',
-						'droid/droid_serif'
-					];
-
-					const weights = [
-						'regular', 'bold'
-					];
-
-					function generateGeometry() {
-
-						const loader = new FontLoader();
-						loader.load( '../../examples/fonts/' + data.font + '_' + data.weight + '.typeface.json', function ( font ) {
-
-							const geometry = new TextGeometry( data.text, {
-								font: font,
-								size: data.size,
-								height: data.height,
-								curveSegments: data.curveSegments,
-								bevelEnabled: data.bevelEnabled,
-								bevelThickness: data.bevelThickness,
-								bevelSize: data.bevelSize,
-								bevelOffset: data.bevelOffset,
-								bevelSegments: data.bevelSegments
-							} );
-							geometry.center();
-
-							updateGroupGeometry( mesh, geometry );
-
-						} );
-
-					}
-
-					//Hide the wireframe
-					mesh.children[ 0 ].visible = false;
-
-					const folder = gui.addFolder( 'THREE.TextGeometry' );
-
-					folder.add( data, 'text' ).onChange( generateGeometry );
-					folder.add( data, 'size', 1, 30 ).onChange( generateGeometry );
-					folder.add( data, 'height', 1, 20 ).onChange( generateGeometry );
-					folder.add( data, 'curveSegments', 1, 20 ).step( 1 ).onChange( generateGeometry );
-					folder.add( data, 'font', fonts ).onChange( generateGeometry );
-					folder.add( data, 'weight', weights ).onChange( generateGeometry );
-					folder.add( data, 'bevelEnabled' ).onChange( generateGeometry );
-					folder.add( data, 'bevelThickness', 0.1, 3 ).onChange( generateGeometry );
-					folder.add( data, 'bevelSize', 0, 3 ).onChange( generateGeometry );
-					folder.add( data, 'bevelOffset', - 0.5, 1.5 ).onChange( generateGeometry );
-					folder.add( data, 'bevelSegments', 0, 8 ).step( 1 ).onChange( generateGeometry );
-
-					generateGeometry();
-
-				},
-
 				TorusGeometry: function ( mesh ) {
 
 					const data = {
@@ -650,30 +613,6 @@
 					folder.add( data, 'radialSegments', 3, 20 ).step( 1 ).onChange( generateGeometry );
 					folder.add( data, 'p', 1, 20 ).step( 1 ).onChange( generateGeometry );
 					folder.add( data, 'q', 1, 20 ).step( 1 ).onChange( generateGeometry );
-
-					generateGeometry();
-
-				},
-
-				ParametricGeometry: function ( mesh ) {
-
-					const data = {
-						slices: 25,
-						stacks: 25
-					};
-
-					function generateGeometry() {
-
-						updateGroupGeometry( mesh,
-							new ParametricGeometry( ParametricGeometries.klein, data.slices, data.stacks )
-						);
-
-					}
-
-					const folder = gui.addFolder( 'THREE.ParametricGeometry' );
-
-					folder.add( data, 'slices', 1, 100 ).step( 1 ).onChange( generateGeometry );
-					folder.add( data, 'stacks', 1, 100 ).step( 1 ).onChange( generateGeometry );
 
 					generateGeometry();
 
@@ -784,20 +723,17 @@
 
 				}
 
-				if ( selectedGeometry === 'TextGeometry' ) {
-
-					return { fixed: true };
-
-				}
-
-				//No configuration options
-				return {};
-
 			}
 
 			//
 
-			document.getElementById( 'newWindow' ).href += window.location.hash;
+			const selectedGeometry = window.location.hash.substring( 1 );
+
+			if ( guis[ selectedGeometry ] !== undefined ) {
+
+				document.getElementById( 'newWindow' ).href += '#' + selectedGeometry;
+
+			}
 
 			const gui = new GUI();
 
@@ -816,9 +752,9 @@
 			orbit.enableZoom = false;
 
 			const lights = [];
-			lights[ 0 ] = new PointLight( 0xffffff, 1, 0 );
-			lights[ 1 ] = new PointLight( 0xffffff, 1, 0 );
-			lights[ 2 ] = new PointLight( 0xffffff, 1, 0 );
+			lights[ 0 ] = new DirectionalLight( 0xffffff, 3 );
+			lights[ 1 ] = new DirectionalLight( 0xffffff, 3 );
+			lights[ 2 ] = new DirectionalLight( 0xffffff, 3 );
 
 			lights[ 0 ].position.set( 0, 200, 0 );
 			lights[ 1 ].position.set( 100, 200, 100 );
@@ -839,7 +775,7 @@
 			group.add( new LineSegments( geometry, lineMaterial ) );
 			group.add( new Mesh( geometry, meshMaterial ) );
 
-			const options = chooseFromHash( group );
+			chooseFromHash( group );
 
 			scene.add( group );
 
@@ -847,12 +783,8 @@
 
 				requestAnimationFrame( render );
 
-				if ( ! options.fixed ) {
-
-					group.rotation.x += 0.005;
-					group.rotation.y += 0.005;
-
-				}
+				group.rotation.x += 0.005;
+				group.rotation.y += 0.005;
 
 				renderer.render( scene, camera );
 

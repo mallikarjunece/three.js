@@ -1,7 +1,6 @@
 import {
-	Clock,
+	Timer,
 	Color,
-	LinearEncoding,
 	Matrix4,
 	Mesh,
 	RepeatWrapping,
@@ -11,37 +10,60 @@ import {
 	UniformsUtils,
 	Vector2,
 	Vector4
-} from '../../../build/three.module.js';
+} from 'three';
 import { Reflector } from '../objects/Reflector.js';
 import { Refractor } from '../objects/Refractor.js';
 
-/**
- * References:
- *	http://www.valvesoftware.com/publications/2010/siggraph2010_vlachos_waterflow.pdf
- * 	http://graphicsrunner.blogspot.de/2010/08/water-using-flow-maps.html
- *
- */
+/** @module Water2 */
 
+/**
+ * An advanced water effect that supports reflections, refractions and flow maps.
+ *
+ * Note that this class can only be used with {@link WebGLRenderer}.
+ * When using {@link WebGPURenderer}, use {@link module:Water2Mesh}.
+ *
+ * References:
+ *
+ * - {@link https://alex.vlachos.com/graphics/Vlachos-SIGGRAPH10-WaterFlow.pdf}
+ * - {@link http://graphicsrunner.blogspot.de/2010/08/water-using-flow-maps.html}
+ *
+ * @augments Mesh
+ * @three_import import { Water } from 'three/addons/objects/Water2.js';
+ */
 class Water extends Mesh {
 
+	/**
+	 * Constructs a new water instance.
+	 *
+	 * @param {BufferGeometry} geometry - The water's geometry.
+	 * @param {module:Water2~Options} [options] - The configuration options.
+	 */
 	constructor( geometry, options = {} ) {
 
 		super( geometry );
+
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isWater = true;
 
 		this.type = 'Water';
 
 		const scope = this;
 
 		const color = ( options.color !== undefined ) ? new Color( options.color ) : new Color( 0xFFFFFF );
-		const textureWidth = options.textureWidth || 512;
-		const textureHeight = options.textureHeight || 512;
-		const clipBias = options.clipBias || 0;
-		const flowDirection = options.flowDirection || new Vector2( 1, 0 );
-		const flowSpeed = options.flowSpeed || 0.03;
-		const reflectivity = options.reflectivity || 0.02;
-		const scale = options.scale || 1;
-		const shader = options.shader || Water.WaterShader;
-		const encoding = options.encoding !== undefined ? options.encoding : LinearEncoding;
+		const textureWidth = options.textureWidth !== undefined ? options.textureWidth : 512;
+		const textureHeight = options.textureHeight !== undefined ? options.textureHeight : 512;
+		const clipBias = options.clipBias !== undefined ? options.clipBias : 0;
+		const flowDirection = options.flowDirection !== undefined ? options.flowDirection : new Vector2( 1, 0 );
+		const flowSpeed = options.flowSpeed !== undefined ? options.flowSpeed : 0.03;
+		const reflectivity = options.reflectivity !== undefined ? options.reflectivity : 0.02;
+		const scale = options.scale !== undefined ? options.scale : 1;
+		const shader = options.shader !== undefined ? options.shader : Water.WaterShader;
 
 		const textureLoader = new TextureLoader();
 
@@ -52,7 +74,7 @@ class Water extends Mesh {
 		const cycle = 0.15; // a cycle of a flow map phase
 		const halfCycle = cycle * 0.5;
 		const textureMatrix = new Matrix4();
-		const clock = new Clock();
+		const timer = new Timer();
 
 		// internal components
 
@@ -73,15 +95,13 @@ class Water extends Mesh {
 		const reflector = new Reflector( geometry, {
 			textureWidth: textureWidth,
 			textureHeight: textureHeight,
-			clipBias: clipBias,
-			encoding: encoding
+			clipBias: clipBias
 		} );
 
 		const refractor = new Refractor( geometry, {
 			textureWidth: textureWidth,
 			textureHeight: textureHeight,
-			clipBias: clipBias,
-			encoding: encoding
+			clipBias: clipBias
 		} );
 
 		reflector.matrixAutoUpdate = false;
@@ -90,6 +110,7 @@ class Water extends Mesh {
 		// material
 
 		this.material = new ShaderMaterial( {
+			name: shader.name,
 			uniforms: UniformsUtils.merge( [
 				UniformsLib[ 'fog' ],
 				shader.uniforms
@@ -133,7 +154,7 @@ class Water extends Mesh {
 		this.material.uniforms[ 'reflectivity' ].value = reflectivity;
 		this.material.uniforms[ 'textureMatrix' ].value = textureMatrix;
 
-		// inital values
+		// initial values
 
 		this.material.uniforms[ 'config' ].value.x = 0; // flowMapOffset0
 		this.material.uniforms[ 'config' ].value.y = halfCycle; // flowMapOffset1
@@ -159,7 +180,7 @@ class Water extends Mesh {
 
 		function updateFlow() {
 
-			const delta = clock.getDelta();
+			const delta = timer.getDelta();
 			const config = scope.material.uniforms[ 'config' ];
 
 			config.value.x += flowSpeed * delta; // flowMapOffset0
@@ -186,6 +207,8 @@ class Water extends Mesh {
 
 		this.onBeforeRender = function ( renderer, scene, camera ) {
 
+			timer.update();
+
 			updateTextureMatrix( camera );
 			updateFlow();
 
@@ -205,9 +228,9 @@ class Water extends Mesh {
 
 }
 
-Water.prototype.isWater = true;
-
 Water.WaterShader = {
+
+	name: 'WaterShader',
 
 	uniforms: {
 
@@ -315,7 +338,10 @@ Water.WaterShader = {
 			float halfCycle = config.z;
 			float scale = config.w;
 
-			vec3 toEye = normalize( vToEye );
+			float distSq = dot( vToEye, vToEye );
+			float invDistance = inversesqrt( distSq );
+			vec3 toEye = vToEye * invDistance;
+			float distance = distSq * invDistance;
 
 			// determine flow direction
 			vec2 flow;
@@ -339,24 +365,50 @@ Water.WaterShader = {
 
 			// calculate the fresnel term to blend reflection and refraction maps
 			float theta = max( dot( toEye, normal ), 0.0 );
-			float reflectance = reflectivity + ( 1.0 - reflectivity ) * pow( ( 1.0 - theta ), 5.0 );
+			float oneMinusTheta = 1.0 - theta;
+			float oneMinusTheta2 = oneMinusTheta * oneMinusTheta;
+			float reflectance = reflectivity + ( 1.0 - reflectivity ) * ( oneMinusTheta2 * oneMinusTheta2 * oneMinusTheta );
 
 			// calculate final uv coords
-			vec3 coord = vCoord.xyz / vCoord.w;
-			vec2 uv = coord.xy + coord.z * normal.xz * 0.05;
+			vec2 viewRight = vec2( viewMatrix[ 0 ][ 0 ], viewMatrix[ 2 ][ 0 ] );
+			vec2 normalTilt = vec2(
+				normal.x * viewRight.x + normal.z * viewRight.y,
+				normal.z * viewRight.x - normal.x * viewRight.y
+			);
+			vec2 offset = normalTilt * ( 0.05 / ( 1.0 + 0.02 * distance ) );
 
-			vec4 reflectColor = texture2D( tReflectionMap, vec2( 1.0 - uv.x, uv.y ) );
-			vec4 refractColor = texture2D( tRefractionMap, uv );
+			vec2 coord = vCoord.xy / vCoord.w;
 
-			// multiply water color with the mix of both textures
-			gl_FragColor = vec4( color, 1.0 ) * mix( refractColor, reflectColor, reflectance );
+			vec4 reflectColor = texture2D( tReflectionMap, vec2( 1.0 - coord.x - offset.x, coord.y - offset.y ) );
+			vec4 refractColor = texture2D( tRefractionMap, vec2( coord.x - offset.x, coord.y + offset.y ) );
+
+			// tint transmitted light only; dielectric surface reflections stay achromatic
+			gl_FragColor = vec4( mix( refractColor.rgb * color, reflectColor.rgb, reflectance ), 1.0 );
 
 			#include <tonemapping_fragment>
-			#include <encodings_fragment>
+			#include <colorspace_fragment>
 			#include <fog_fragment>
 
 		}`
 
 };
+
+/**
+ * Constructor options of `Water`.
+ *
+ * @typedef {Object} module:Water2~Options
+ * @property {number|Color|string} [color=0xFFFFFF] - The water color.
+ * @property {number} [textureWidth=512] - The texture width. A higher value results in better quality but is also more expensive.
+ * @property {number} [textureHeight=512] - The texture height. A higher value results in better quality but is also more expensive.
+ * @property {number} [clipBias=0] - The clip bias.
+ * @property {Vector2} [flowDirection=(1,0)] - The water's flow direction.
+ * @property {number} [flowSpeed=0.03] - The water's flow speed.
+ * @property {number} [reflectivity=0.02] - The water's reflectivity.
+ * @property {number} [scale=1] - The water's scale.
+ * @property {Object} [shader] - A custom water shader.
+ * @property {?Texture} [flowMap=null] - The flow map. If no flow map is assigned, the water flow is defined by `flowDirection`.
+ * @property {?Texture} [normalMap0] - The first water normal map.
+ * @property {?Texture} [normalMap1] -  The second water normal map.
+ **/
 
 export { Water };

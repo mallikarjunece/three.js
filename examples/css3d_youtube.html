@@ -4,6 +4,10 @@
 		<title>three.js css3d - youtube</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js css3d - youtube">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/css3d_youtube.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/css3d_youtube.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 		<style>
 			body {
@@ -23,12 +27,21 @@
 		<div id="container"></div>
 		<div id="blocker"></div>
 
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import { TrackballControls } from './jsm/controls/TrackballControls.js';
-			import { CSS3DRenderer, CSS3DObject } from './jsm/renderers/CSS3DRenderer.js';
+			import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
+			import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
 
 			let camera, scene, renderer;
 			let controls;
@@ -53,7 +66,7 @@
 
 				return object;
 
-			};
+			}
 
 			init();
 			animate();

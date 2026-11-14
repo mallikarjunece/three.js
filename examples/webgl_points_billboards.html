@@ -4,6 +4,10 @@
 		<title>three.js webgl - particles - billboards</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - particles - billboards">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_points_billboards.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_points_billboards.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 	<body>
@@ -12,13 +16,22 @@
 			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - webgl particle billboards example
 		</div>
 
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import Stats from './jsm/libs/stats.module.js';
+			import Stats from 'three/addons/libs/stats.module.js';
 
-			import { GUI } from './jsm/libs/dat.gui.module.js';
+			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 			let camera, scene, renderer, stats, material;
 			let mouseX = 0, mouseY = 0;
@@ -27,7 +40,6 @@
 			let windowHalfY = window.innerHeight / 2;
 
 			init();
-			animate();
 
 			function init() {
 
@@ -41,6 +53,7 @@
 				const vertices = [];
 
 				const sprite = new THREE.TextureLoader().load( 'textures/sprites/disc.png' );
+				sprite.colorSpace = THREE.SRGBColorSpace;
 
 				for ( let i = 0; i < 10000; i ++ ) {
 
@@ -55,7 +68,7 @@
 				geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
 
 				material = new THREE.PointsMaterial( { size: 35, sizeAttenuation: true, map: sprite, alphaTest: 0.5, transparent: true } );
-				material.color.setHSL( 1.0, 0.3, 0.7 );
+				material.color.setHSL( 1.0, 0.3, 0.7, THREE.SRGBColorSpace );
 
 				const particles = new THREE.Points( geometry, material );
 				scene.add( particles );
@@ -65,6 +78,7 @@
 				renderer = new THREE.WebGLRenderer();
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setAnimationLoop( animate );
 				document.body.appendChild( renderer.domElement );
 
 				//
@@ -119,8 +133,6 @@
 			//
 
 			function animate() {
-
-				requestAnimationFrame( animate );
 
 				render();
 				stats.update();

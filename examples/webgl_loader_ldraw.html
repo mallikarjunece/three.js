@@ -4,6 +4,10 @@
 		<title>three.js webgl - LDrawLoader</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - LDrawLoader">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_loader_ldraw.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_loader_ldraw.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 		<style>
 			body {
@@ -20,16 +24,27 @@
 		<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - LDrawLoader
 		</div>
 
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import { GUI } from './jsm/libs/dat.gui.module.js';
+			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
-			import { OrbitControls } from './jsm/controls/OrbitControls.js';
-			import { RoomEnvironment } from './jsm/environments/RoomEnvironment.js';
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+			import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-			import { LDrawLoader } from './jsm/loaders/LDrawLoader.js';
+			import { LDrawLoader } from 'three/addons/loaders/LDrawLoader.js';
+			import { LDrawUtils } from 'three/addons/utils/LDrawUtils.js';
+			import { LDrawConditionalLineMaterial } from 'three/addons/materials/LDrawConditionalLineMaterial.js';
 
 			let container, progressBarDiv;
 
@@ -55,12 +70,11 @@
 				'TIE Interceptor': 'models/6965-1-TIEIntercep_4h4MXk5.mpd_Packed.mpd',
 				'Star fighter': 'models/6966-1-JediStarfighter-Mini.mpd_Packed.mpd',
 				'X-Wing': 'models/7140-1-X-wingFighter.mpd_Packed.mpd',
-				'AT-ST': 'models/10174-1-ImperialAT-ST-UCS.mpd_Packed.mpd'
+				'AT-ST': 'models/10174-1-ImperialAT-ST-UCS.mpd_Packed.mpd',
+				'Window': 'models/6156-1-WindowBrick.mpd_Packed.mpd'
 			};
 
 			init();
-			animate();
-
 
 			function init() {
 
@@ -72,9 +86,10 @@
 
 				//
 
-				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer = new THREE.WebGLRenderer( { antialias: true, outputBufferType: THREE.HalfFloatType } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setAnimationLoop( animate );
 				renderer.toneMapping = THREE.ACESFilmicToneMapping;
 				container.appendChild( renderer.domElement );
 
@@ -84,20 +99,22 @@
 
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color( 0xdeebed );
-				scene.environment = pmremGenerator.fromScene( new RoomEnvironment() ).texture;
+				scene.environment = pmremGenerator.fromScene( new RoomEnvironment(), 0.04 ).texture;
 
 				controls = new OrbitControls( camera, renderer.domElement );
+				controls.enableDamping = true;
 
 				//
 
 				guiData = {
 					modelFileName: modelFileList[ 'Car' ],
-					separateObjects: false,
 					displayLines: true,
 					conditionalLines: true,
 					smoothNormals: true,
-					constructionStep: 0,
-					noConstructionSteps: 'No steps.'
+					buildingStep: 0,
+					noBuildingSteps: 'No steps.',
+					flatColors: false,
+					mergeModel: false
 				};
 
 				window.addEventListener( 'resize', onWindowResize );
@@ -137,8 +154,8 @@
 
 					} else if ( c.isGroup ) {
 
-						// Hide objects with construction step > gui setting
-						c.visible = c.userData.constructionStep <= guiData.constructionStep;
+						// Hide objects with building step > gui setting
+						c.visible = c.userData.buildingStep <= guiData.buildingStep;
 
 					}
 
@@ -159,9 +176,10 @@
 				updateProgressBar( 0 );
 				showProgressBar();
 
+				// only smooth when not rendering with flat colors to improve processing time
 				const lDrawLoader = new LDrawLoader();
-				lDrawLoader.separateObjects = guiData.separateObjects;
-				lDrawLoader.smoothNormals = guiData.smoothNormals;
+				lDrawLoader.setConditionalLineMaterial( LDrawConditionalLineMaterial );
+				lDrawLoader.smoothNormals = guiData.smoothNormals && ! guiData.flatColors;
 				lDrawLoader
 					.setPath( ldrawPath )
 					.load( guiData.modelFileName, function ( group2 ) {
@@ -174,12 +192,54 @@
 
 						model = group2;
 
+						// demonstrate how to use convert to flat colors to better mimic the lego instructions look
+						if ( guiData.flatColors ) {
+
+							function convertMaterial( material ) {
+
+								const newMaterial = new THREE.MeshBasicMaterial();
+								newMaterial.color.copy( material.color );
+								newMaterial.polygonOffset = material.polygonOffset;
+								newMaterial.polygonOffsetUnits = material.polygonOffsetUnits;
+								newMaterial.polygonOffsetFactor = material.polygonOffsetFactor;
+								newMaterial.opacity = material.opacity;
+								newMaterial.transparent = material.transparent;
+								newMaterial.depthWrite = material.depthWrite;
+								newMaterial.toneMapped = false;
+
+								return newMaterial;
+
+							}
+
+							model.traverse( c => {
+
+								if ( c.isMesh ) {
+
+									if ( Array.isArray( c.material ) ) {
+
+										c.material = c.material.map( convertMaterial );
+
+									} else {
+
+										c.material = convertMaterial( c.material );
+
+									}
+
+								}
+
+							} );
+
+						}
+
+						// Merge model geometries by material
+						if ( guiData.mergeModel ) model = LDrawUtils.mergeObject( model );
+
 						// Convert from LDraw coordinates: rotate 180 degrees around OX
 						model.rotation.x = Math.PI;
 
 						scene.add( model );
 
-						guiData.constructionStep = model.userData.numConstructionSteps - 1;
+						guiData.buildingStep = model.userData.numBuildingSteps - 1;
 
 						updateObjectsVisibility();
 
@@ -230,23 +290,25 @@
 
 				} );
 
-				gui.add( guiData, 'separateObjects' ).name( 'Separate Objects' ).onChange( function () {
+				gui.add( guiData, 'flatColors' ).name( 'Flat Colors' ).onChange( function () {
 
 					reloadObject( false );
 
 				} );
 
-				if ( guiData.separateObjects ) {
+				gui.add( guiData, 'mergeModel' ).name( 'Merge model' ).onChange( function () {
 
-					if ( model.userData.numConstructionSteps > 1 ) {
+					reloadObject( false );
 
-						gui.add( guiData, 'constructionStep', 0, model.userData.numConstructionSteps - 1 ).step( 1 ).name( 'Construction step' ).onChange( updateObjectsVisibility );
+				} );
 
-					} else {
+				if ( model.userData.numBuildingSteps > 1 ) {
 
-						gui.add( guiData, 'noConstructionSteps' ).name( 'Construction step' ).onChange( updateObjectsVisibility );
+					gui.add( guiData, 'buildingStep', 0, model.userData.numBuildingSteps - 1 ).step( 1 ).name( 'Building step' ).onChange( updateObjectsVisibility );
 
-					}
+				} else {
+
+					gui.add( guiData, 'noBuildingSteps' ).name( 'Building step' ).onChange( updateObjectsVisibility );
 
 				}
 
@@ -265,7 +327,7 @@
 
 			function animate() {
 
-				requestAnimationFrame( animate );
+				controls.update();
 				render();
 
 			}
@@ -282,17 +344,18 @@
 
 					updateProgressBar( xhr.loaded / xhr.total );
 
-					console.log( Math.round( xhr.loaded / xhr.total * 100, 2 ) + '% downloaded' );
+					console.log( Math.round( xhr.loaded / xhr.total * 100 ) + '% downloaded' );
 
 				}
 
 			}
 
-			function onError() {
+			function onError( error ) {
 
 				const message = 'Error loading model';
 				progressBarDiv.innerText = message;
 				console.log( message );
+				console.error( error );
 
 			}
 
@@ -310,7 +373,7 @@
 
 			function updateProgressBar( fraction ) {
 
-				progressBarDiv.innerText = 'Loading... ' + Math.round( fraction * 100, 2 ) + '%';
+				progressBarDiv.innerText = 'Loading... ' + Math.round( fraction * 100 ) + '%';
 
 			}
 
@@ -319,9 +382,9 @@
 		<!-- LDraw.org CC BY 2.0 Parts Library attribution -->
 		<div style="display: block; position: absolute; bottom: 8px; left: 8px; width: 160px; padding: 10px; background-color: #F3F7F8;">
 			<center>
-				<a href="http://www.ldraw.org"><img style="width: 145px" src="models/ldraw/ldraw_org_logo/Stamp145.png"></a>
+				<a href="https://www.ldraw.org"><img style="width: 145px" src="models/ldraw/ldraw_org_logo/Stamp145.png"></a>
 				<br />
-				<a href="http://www.ldraw.org/">This software uses the LDraw Parts Library</a>
+				<a href="https://www.ldraw.org/">This software uses the LDraw Parts Library</a>
 			</center>
 		</div>
 

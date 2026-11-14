@@ -4,24 +4,39 @@
 		<title>three.js webgl - shadow map</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - shadow map">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_shadowmap_performance.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_shadowmap_performance.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 
 	<body>
 
 		<div id="info">
-		<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - shadowmap - models by <a href="https://mirada.com/" target="_blank" rel="noopener">mirada</a> from <a href="http://www.ro.me" target="_blank" rel="noopener">rome</a><br />
+		<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - shadowmap - models by <a href="https://mirada.com/" target="_blank" rel="noopener">mirada</a> from <a href="https://rome.mrdoob.com" target="_blank" rel="noopener">rome</a><br />
 		move camera with WASD / RF + mouse
 		</div>
 
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import Stats from './jsm/libs/stats.module.js';
+			import Stats from 'three/addons/libs/stats.module.js';
 
-			import { FirstPersonControls } from './jsm/controls/FirstPersonControls.js';
-			import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
+			import { FirstPersonControls } from 'three/addons/controls/FirstPersonControls.js';
+			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+			import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+			import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 
 			const SHADOW_MAP_WIDTH = 2048, SHADOW_MAP_HEIGHT = 1024;
 
@@ -40,11 +55,10 @@
 
 			const morphs = [], animGroups = [];
 
-			const clock = new THREE.Clock();
+			const timer = new THREE.Timer();
+			timer.connect( document );
 
 			init();
-			animate();
-
 
 			function init() {
 
@@ -64,14 +78,16 @@
 
 				// LIGHTS
 
-				const ambient = new THREE.AmbientLight( 0x444444 );
+				const ambient = new THREE.AmbientLight( 0xffffff );
 				scene.add( ambient );
 
-				const light = new THREE.SpotLight( 0xffffff, 1, 0, Math.PI / 5, 0.3 );
+				const light = new THREE.DirectionalLight( 0xffffff, 3 );
 				light.position.set( 0, 1500, 1000 );
-				light.target.position.set( 0, 0, 0 );
-
 				light.castShadow = true;
+				light.shadow.camera.top = 2000;
+				light.shadow.camera.bottom = - 2000;
+				light.shadow.camera.left = - 2000;
+				light.shadow.camera.right = 2000;
 				light.shadow.camera.near = 1200;
 				light.shadow.camera.far = 2500;
 				light.shadow.bias = 0.0001;
@@ -85,26 +101,25 @@
 
 				// RENDERER
 
-				renderer = new THREE.WebGLRenderer();
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
+				renderer.setAnimationLoop( animate );
 				container.appendChild( renderer.domElement );
 
-				renderer.outputEncoding = THREE.sRGBEncoding;
 				renderer.autoClear = false;
 
 				//
 
 				renderer.shadowMap.enabled = true;
-				renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+				renderer.shadowMap.type = THREE.PCFShadowMap;
 
 				// CONTROLS
 
 				controls = new FirstPersonControls( camera, renderer.domElement );
 
-				controls.lookSpeed = 0.0125;
+				controls.lookSpeed = 0.2;
 				controls.movementSpeed = 500;
-				controls.noFly = false;
 				controls.lookVertical = true;
 
 				controls.lookAt( scene.position );
@@ -130,8 +145,6 @@
 
 				renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
 
-				controls.handleResize();
-
 			}
 
 			function createScene( ) {
@@ -139,7 +152,7 @@
 				// GROUND
 
 				const geometry = new THREE.PlaneGeometry( 100, 100 );
-				const planeMaterial = new THREE.MeshPhongMaterial( { color: 0xffb851 } );
+				const planeMaterial = new THREE.MeshPhongMaterial( { color: 0xffdd99 } );
 
 				const ground = new THREE.Mesh( geometry, planeMaterial );
 
@@ -154,15 +167,15 @@
 
 				// TEXT
 
-				const loader = new THREE.FontLoader();
+				const loader = new FontLoader();
 				loader.load( 'fonts/helvetiker_bold.typeface.json', function ( font ) {
 
-					const textGeo = new THREE.TextGeometry( "THREE.JS", {
+					const textGeo = new TextGeometry( 'THREE.JS', {
 
 						font: font,
 
 						size: 200,
-						height: 50,
+						depth: 50,
 						curveSegments: 12,
 
 						bevelThickness: 2,
@@ -274,7 +287,7 @@
 				}
 
 				const gltfLoader = new GLTFLoader();
-				gltfLoader.load( "models/gltf/Horse.glb", function ( gltf ) {
+				gltfLoader.load( 'models/gltf/Horse.glb', function ( gltf ) {
 
 					const mesh = gltf.scene.children[ 0 ];
 					const clip = gltf.animations[ 0 ];
@@ -293,7 +306,7 @@
 
 			function animate() {
 
-				requestAnimationFrame( animate );
+				timer.update();
 
 				stats.begin();
 				render();
@@ -303,7 +316,7 @@
 
 			function render() {
 
-				const delta = clock.getDelta();
+				const delta = timer.getDelta();
 
 				if ( mixer ) mixer.update( delta );
 

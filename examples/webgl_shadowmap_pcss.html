@@ -4,6 +4,10 @@
 		<title>three.js webgl - percent closer soft-shadows</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - percent closer soft-shadows">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_shadowmap_pcss.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_shadowmap_pcss.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 		<style>
 			body {
@@ -17,7 +21,7 @@
 	</head>
 
 	<body>
-		<div id="info">Percent Closer Soft-Shadows (PCSS) by <a href="http://eduperiment.com">spidersharma03</a></div>
+		<div id="info">Percent Closer Soft-Shadows (PCSS) by <a href="https://github.com/spidersharma03">spidersharma03</a></div>
 
 		<script type="x-shader/x-fragment" id="PCSS">
 
@@ -29,7 +33,6 @@
 				#define NUM_SAMPLES 17
 				#define NUM_RINGS 11
 				#define BLOCKER_SEARCH_NUM_SAMPLES NUM_SAMPLES
-				#define PCF_NUM_SAMPLES NUM_SAMPLES
 
 				vec2 poissonDisk[NUM_SAMPLES];
 
@@ -61,7 +64,7 @@
 					int numBlockers = 0;
 
 					for( int i = 0; i < BLOCKER_SEARCH_NUM_SAMPLES; i++ ) {
-						float shadowMapDepth = unpackRGBAToDepth(texture2D(shadowMap, uv + poissonDisk[i] * searchRadius));
+						float shadowMapDepth = texture2D(shadowMap, uv + poissonDisk[i] * searchRadius).r;
 						if ( shadowMapDepth < zReceiver ) {
 							blockerDepthSum += shadowMapDepth;
 							numBlockers ++;
@@ -75,15 +78,20 @@
 
 				float PCF_Filter(sampler2D shadowMap, vec2 uv, float zReceiver, float filterRadius ) {
 					float sum = 0.0;
-					for( int i = 0; i < PCF_NUM_SAMPLES; i ++ ) {
-						float depth = unpackRGBAToDepth( texture2D( shadowMap, uv + poissonDisk[ i ] * filterRadius ) );
+					float depth;
+					#pragma unroll_loop_start
+					for( int i = 0; i < 17; i ++ ) {
+						depth = texture2D( shadowMap, uv + poissonDisk[ i ] * filterRadius ).r;
 						if( zReceiver <= depth ) sum += 1.0;
 					}
-					for( int i = 0; i < PCF_NUM_SAMPLES; i ++ ) {
-						float depth = unpackRGBAToDepth( texture2D( shadowMap, uv + -poissonDisk[ i ].yx * filterRadius ) );
+					#pragma unroll_loop_end
+					#pragma unroll_loop_start
+					for( int i = 0; i < 17; i ++ ) {
+						depth = texture2D( shadowMap, uv + -poissonDisk[ i ].yx * filterRadius ).r;
 						if( zReceiver <= depth ) sum += 1.0;
 					}
-					return sum / ( 2.0 * float( PCF_NUM_SAMPLES ) );
+					#pragma unroll_loop_end
+					return sum / ( 2.0 * float( 17 ) );
 				}
 
 				float PCSS ( sampler2D shadowMap, vec4 coords ) {
@@ -114,13 +122,22 @@
 
 		</script>
 
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import Stats from './jsm/libs/stats.module.js';
+			import Stats from 'three/addons/libs/stats.module.js';
 
-			import { OrbitControls } from './jsm/controls/OrbitControls.js';
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 			let stats;
 			let camera, scene, renderer;
@@ -128,7 +145,6 @@
 			let group;
 
 			init();
-			animate();
 
 			function init() {
 
@@ -156,9 +172,9 @@
 
 				// lights
 
-				scene.add( new THREE.AmbientLight( 0x666666 ) );
+				scene.add( new THREE.AmbientLight( 0xaaaaaa, 3 ) );
 
-				const light = new THREE.DirectionalLight( 0xdfebff, 1.75 );
+				const light = new THREE.DirectionalLight( 0xf0f6ff, 4.5 );
 				light.position.set( 2, 8, 4 );
 
 				light.castShadow = true;
@@ -196,7 +212,7 @@
 
 				// ground
 
-				const groundMaterial = new THREE.MeshPhongMaterial( { color: 0x404040, specular: 0x111111 } );
+				const groundMaterial = new THREE.MeshPhongMaterial( { color: 0x898989 } );
 
 				const ground = new THREE.Mesh( new THREE.PlaneGeometry( 20000, 20000, 8, 8 ), groundMaterial );
 				ground.rotation.x = - Math.PI / 2;
@@ -222,9 +238,10 @@
 				);
 
 				shader = shader.replace(
-					'#if defined( SHADOWMAP_TYPE_PCF )',
-					document.getElementById( 'PCSSGetShadow' ).textContent +
-					'#if defined( SHADOWMAP_TYPE_PCF )'
+					'\t\t\tif ( frustumTest ) {\n\t\t\t\tfloat depth = texture2D( shadowMap, shadowCoord.xy ).r;',
+					'\t\t\tif ( frustumTest ) {\n' +
+					document.getElementById( 'PCSSGetShadow' ).textContent + '\n' +
+					'\t\t\t\tfloat depth = texture2D( shadowMap, shadowCoord.xy ).r;'
 				);
 
 				THREE.ShaderChunk.shadowmap_pars_fragment = shader;
@@ -234,12 +251,13 @@
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setAnimationLoop( animate );
 				renderer.setClearColor( scene.fog.color );
 
 				container.appendChild( renderer.domElement );
 
-				renderer.outputEncoding = THREE.sRGBEncoding;
 				renderer.shadowMap.enabled = true;
+				renderer.shadowMap.type = THREE.BasicShadowMap; // PCSS requires reading raw depth values
 
 				// controls
 				const controls = new OrbitControls( camera, renderer.domElement );
@@ -290,8 +308,6 @@
 				renderer.render( scene, camera );
 
 				stats.update();
-
-				requestAnimationFrame( animate );
 
 			}
 

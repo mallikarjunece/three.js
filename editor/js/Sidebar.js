@@ -2,31 +2,37 @@ import { UITabbedPanel, UISpan } from './libs/ui.js';
 
 import { SidebarScene } from './Sidebar.Scene.js';
 import { SidebarProperties } from './Sidebar.Properties.js';
-import { SidebarScript } from './Sidebar.Script.js';
-import { SidebarAnimation } from './Sidebar.Animation.js';
 import { SidebarProject } from './Sidebar.Project.js';
 import { SidebarSettings } from './Sidebar.Settings.js';
 
 function Sidebar( editor ) {
 
-	var strings = editor.strings;
+	const strings = editor.strings;
 
-	var container = new UITabbedPanel();
+	const container = new UITabbedPanel();
 	container.setId( 'sidebar' );
 
-	var scene = new UISpan().add(
+	const sidebarProperties = new SidebarProperties( editor );
+
+	const scene = new UISpan().add(
 		new SidebarScene( editor ),
-		new SidebarProperties( editor ),
-		new SidebarAnimation( editor ),
-		new SidebarScript( editor )
+		sidebarProperties
 	);
-	var project = new SidebarProject( editor );
-	var settings = new SidebarSettings( editor );
+	const project = new SidebarProject( editor );
+	const settings = new SidebarSettings( editor );
 
 	container.addTab( 'scene', strings.getKey( 'sidebar/scene' ), scene );
 	container.addTab( 'project', strings.getKey( 'sidebar/project' ), project );
 	container.addTab( 'settings', strings.getKey( 'sidebar/settings' ), settings );
 	container.select( 'scene' );
+
+	const sidebarPropertiesResizeObserver = new ResizeObserver( function () {
+
+		sidebarProperties.tabsDiv.setWidth( getComputedStyle( container.dom ).width );
+
+	} );
+
+	sidebarPropertiesResizeObserver.observe( container.tabsDiv.dom );
 
 	return container;
 

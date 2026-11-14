@@ -4,6 +4,10 @@
 		<title>three.js webgl - materials - video - webcam</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - materials - video - webcam">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_materials_video_webcam.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_materials_video_webcam.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 	<body>
@@ -14,16 +18,24 @@
 
 		<video id="video" style="display:none" autoplay playsinline></video>
 
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import { OrbitControls } from './jsm/controls/OrbitControls.js';
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 			let camera, scene, renderer, video;
 
 			init();
-			animate();
 
 			function init() {
 
@@ -35,6 +47,7 @@
 				video = document.getElementById( 'video' );
 
 				const texture = new THREE.VideoTexture( video );
+				texture.colorSpace = THREE.SRGBColorSpace;
 
 				const geometry = new THREE.PlaneGeometry( 16, 9 );
 				geometry.scale( 0.5, 0.5, 0.5 );
@@ -58,6 +71,7 @@
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setAnimationLoop( animate );
 				document.body.appendChild( renderer.domElement );
 
 				const controls = new OrbitControls( camera, renderer.domElement );
@@ -104,7 +118,6 @@
 
 			function animate() {
 
-				requestAnimationFrame( animate );
 				renderer.render( scene, camera );
 
 			}

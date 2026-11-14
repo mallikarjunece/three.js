@@ -1,14 +1,17 @@
 /**
- * RGB Shift Shader
- * Shifts red and blue channels from center in opposite directions
- * Ported from http://kriss.cx/tom/2009/05/rgb-shift/
- * by Tom Butterworth / http://kriss.cx/tom/
- *
- * amount: shift distance (1 is width of input)
- * angle: shift angle in radians
+ * @module DigitalGlitch
+ * @three_import import { DigitalGlitch } from 'three/addons/shaders/DigitalGlitch.js';
  */
 
+/**
+ * Digital glitch shader.
+ *
+ * @constant
+ * @type {ShaderMaterial~Shader}
+ */
 const DigitalGlitch = {
+
+	name: 'DigitalGlitch',
 
 	uniforms: {
 
@@ -62,7 +65,7 @@ const DigitalGlitch = {
 				float xs = floor(gl_FragCoord.x / 0.5);
 				float ys = floor(gl_FragCoord.y / 0.5);
 				//based on staffantans glitch shader for unity https://github.com/staffantan/unityglitch
-				vec4 normal = texture2D (tDisp, p*seed*seed);
+				float disp = texture2D(tDisp, p*seed*seed).r;
 				if(p.y<distortion_x+col_s && p.y>distortion_x-col_s*seed) {
 					if(seed_x>0.){
 						p.y = 1. - (p.y + distortion_y);
@@ -79,8 +82,8 @@ const DigitalGlitch = {
 						p.x = 1. - (p.x + distortion_x);
 					}
 				}
-				p.x+=normal.x*seed_x*(seed/5.);
-				p.y+=normal.y*seed_y*(seed/5.);
+				p.x+=disp*seed_x*(seed/5.);
+				p.y+=disp*seed_y*(seed/5.);
 				//base from RGB shift shader
 				vec2 offset = amount * vec2( cos(angle), sin(angle));
 				vec4 cr = texture2D(tDiffuse, p + offset);

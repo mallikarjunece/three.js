@@ -4,6 +4,10 @@
 		<title>three.js webgl - materials - cube refraction [Lucy]</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - materials - cube refraction [Lucy]">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_materials_cubemap_refraction.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_materials_cubemap_refraction.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 
@@ -14,19 +18,26 @@
 			Texture by <a href="http://www.humus.name/index.php?page=Textures" target="_blank" rel="noopener">Humus</a>
 		</div>
 
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import Stats from './jsm/libs/stats.module.js';
+			import Stats from 'three/addons/libs/stats.module.js';
 
-			import { PLYLoader } from './jsm/loaders/PLYLoader.js';
+			import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
 
 			let container, stats;
 
 			let camera, scene, renderer;
-
-			let pointLight;
 
 			let mouseX = 0, mouseY = 0;
 
@@ -34,7 +45,6 @@
 			let windowHalfY = window.innerHeight / 2;
 
 			init();
-			animate();
 
 			function init() {
 
@@ -46,12 +56,12 @@
 
 				//
 
-				const r = "textures/cube/Park3Med/";
+				const r = 'textures/cube/Park3Med/';
 
 				const urls = [
-					r + "px.jpg", r + "nx.jpg",
-					r + "py.jpg", r + "ny.jpg",
-					r + "pz.jpg", r + "nz.jpg"
+					r + 'px.jpg', r + 'nx.jpg',
+					r + 'py.jpg', r + 'ny.jpg',
+					r + 'pz.jpg', r + 'nz.jpg'
 				];
 
 				const textureCube = new THREE.CubeTextureLoader().load( urls );
@@ -62,19 +72,8 @@
 
 				// LIGHTS
 
-				const ambient = new THREE.AmbientLight( 0xffffff );
+				const ambient = new THREE.AmbientLight( 0xffffff, 3.5 );
 				scene.add( ambient );
-
-				pointLight = new THREE.PointLight( 0xffffff, 2 );
-				scene.add( pointLight );
-
-				// light representation
-
-				const sphere = new THREE.SphereGeometry( 100, 16, 8 );
-
-				const mesh = new THREE.Mesh( sphere, new THREE.MeshBasicMaterial( { color: 0xffffff } ) );
-				mesh.scale.set( 0.05, 0.05, 0.05 );
-				pointLight.add( mesh );
 
 				// material samples
 
@@ -84,9 +83,10 @@
 
 				//
 
-				renderer = new THREE.WebGLRenderer();
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setAnimationLoop( animate );
 				container.appendChild( renderer.domElement );
 
 				stats = new Stats();
@@ -152,8 +152,6 @@
 
 			function animate() {
 
-				requestAnimationFrame( animate );
-
 				render();
 				stats.update();
 
@@ -161,15 +159,10 @@
 
 			function render() {
 
-				const timer = - 0.0002 * Date.now();
-
 				camera.position.x += ( mouseX - camera.position.x ) * .05;
 				camera.position.y += ( - mouseY - camera.position.y ) * .05;
 
 				camera.lookAt( scene.position );
-
-				pointLight.position.x = 1500 * Math.cos( timer );
-				pointLight.position.z = 1500 * Math.sin( timer );
 
 				renderer.render( scene, camera );
 

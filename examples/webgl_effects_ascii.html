@@ -4,18 +4,31 @@
 		<title>three.js webgl - effects - ascii</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - effects - ascii">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_effects_ascii.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_effects_ascii.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 
 	<body>
 		<div id="info"><a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - effects - ascii</div>
 
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import { AsciiEffect } from './jsm/effects/AsciiEffect.js';
-			import { TrackballControls } from './jsm/controls/TrackballControls.js';
+			import { AsciiEffect } from 'three/addons/effects/AsciiEffect.js';
+			import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 
 			let camera, controls, scene, renderer, effect;
 
@@ -24,7 +37,6 @@
 			const start = Date.now();
 
 			init();
-			animate();
 
 			function init() {
 
@@ -35,11 +47,11 @@
 				scene = new THREE.Scene();
 				scene.background = new THREE.Color( 0, 0, 0 );
 
-				const pointLight1 = new THREE.PointLight( 0xffffff );
+				const pointLight1 = new THREE.PointLight( 0xffffff, 3, 0, 0 );
 				pointLight1.position.set( 500, 500, 500 );
 				scene.add( pointLight1 );
 
-				const pointLight2 = new THREE.PointLight( 0xffffff, 0.25 );
+				const pointLight2 = new THREE.PointLight( 0xffffff, 1, 0, 0 );
 				pointLight2.position.set( - 500, - 500, - 500 );
 				scene.add( pointLight2 );
 
@@ -55,6 +67,7 @@
 
 				renderer = new THREE.WebGLRenderer();
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setAnimationLoop( animate );
 
 				effect = new AsciiEffect( renderer, ' .:-+*=%@#', { invert: true } );
 				effect.setSize( window.innerWidth, window.innerHeight );
@@ -87,14 +100,6 @@
 			//
 
 			function animate() {
-
-				requestAnimationFrame( animate );
-
-				render();
-
-			}
-
-			function render() {
 
 				const timer = Date.now() - start;
 

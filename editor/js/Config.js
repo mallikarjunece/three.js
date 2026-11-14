@@ -1,9 +1,13 @@
 function Config() {
 
-	var name = 'threejs-editor';
+	const name = 'threejs-editor';
 
-	var storage = {
-		'language': 'en',
+	const userLanguage = navigator.language.split( '-' )[ 0 ];
+
+	const suggestedLanguage = [ 'fr', 'ja', 'zh', 'ko', 'fa' ].includes( userLanguage ) ? userLanguage : 'en';
+
+	const storage = {
+		'language': suggestedLanguage,
 
 		'autosave': true,
 
@@ -11,11 +15,13 @@ function Config() {
 		'project/editable': false,
 		'project/vr': false,
 
+		'project/camera': 'perspective',
+
+		'project/renderer/type': 'WebGLRenderer',
 		'project/renderer/antialias': true,
 		'project/renderer/shadows': true,
 		'project/renderer/shadowType': 1, // PCF
-		'project/renderer/physicallyCorrectLights': false,
-		'project/renderer/toneMapping': 0, // NoToneMapping
+		'project/renderer/toneMapping': 7, // NeutralToneMapping
 		'project/renderer/toneMappingExposure': 1,
 
 		'settings/history': false,
@@ -24,7 +30,10 @@ function Config() {
 		'settings/shortcuts/rotate': 'e',
 		'settings/shortcuts/scale': 'r',
 		'settings/shortcuts/undo': 'z',
-		'settings/shortcuts/focus': 'f'
+		'settings/shortcuts/focus': 'f',
+		'settings/shortcuts/perspective': 'p',
+		'settings/shortcuts/orthographic': 'o',
+		'settings/shortcuts/selectAll': 'a'
 	};
 
 	if ( window.localStorage[ name ] === undefined ) {
@@ -33,9 +42,9 @@ function Config() {
 
 	} else {
 
-		var data = JSON.parse( window.localStorage[ name ] );
+		const data = JSON.parse( window.localStorage[ name ] );
 
-		for ( var key in data ) {
+		for ( const key in data ) {
 
 			storage[ key ] = data[ key ];
 
@@ -53,7 +62,7 @@ function Config() {
 
 		setKey: function () { // key, value, key, value ...
 
-			for ( var i = 0, l = arguments.length; i < l; i += 2 ) {
+			for ( let i = 0, l = arguments.length; i < l; i += 2 ) {
 
 				storage[ arguments[ i ] ] = arguments[ i + 1 ];
 

@@ -4,6 +4,10 @@
 		<title>three.js PMREM directional light test</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js PMREM directional light test">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_pmrem_test.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_pmrem_test.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 	<body>
@@ -11,22 +15,31 @@
 		<div id="container">
 			<div id="info">
 				<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> -
-				PMREM directional light test <a href="https://github.com/elalish" target="_blank" rel="noopener">Emmett Lalish</a>
-				<br>Top row is white metal
-				<br>Middle row is white dielectric
-				<br>Bottom row is black dielectric.
-				<br>Mouse-out is a standard Directional Light.
-				<br>Mouse-over is a PMREM of the skybox: a single bright pixel representing the same directional light source.
+				PMREM test by <a href="https://github.com/elalish" target="_blank" rel="noopener">Emmett Lalish</a>
+				<br>
+				<br>1: white metal. 2: white dielectric. 3: black dielectric.
+				<br>PMREM on: HDR with a single bright pixel. PMREM off: DirectionalLight.
 				<br>The difference between these renders indicates the error in the PMREM approximations.
 			</div>
 		</div>
 
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import { OrbitControls } from './jsm/controls/OrbitControls.js';
-			import { RGBELoader } from './jsm/loaders/RGBELoader.js';
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+			import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
+
+			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 			let scene, camera, controls, renderer;
 
@@ -41,8 +54,6 @@
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( width, height );
-				renderer.outputEncoding = THREE.sRGBEncoding;
-				renderer.physicallyCorrectLights = true;
 
 				// tonemapping
 				renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -87,47 +98,33 @@
 				// angle of the pixel in steradians. This image is 1024 x 512,
 				// so the value is 1 / ( sin( phi ) * ( pi / 512 ) ^ 2 ) = 27,490 nits.
 
-				document.body.addEventListener( 'mouseover', function () {
+				const gui = new GUI();
+				gui.add( { enabled: true }, 'enabled' )
+					.name( 'PMREM' )
+					.onChange( value => {
 
-					scene.traverse( function ( child ) {
+						directionalLight.intensity = value ? 0 : 1;
 
-						if ( child.isMesh ) {
+						scene.traverse( function ( child ) {
 
-							child.material.envMapIntensity = 1;
-							directionalLight.intensity = 0;
+							if ( child.isMesh ) {
 
-						}
+								child.material.envMapIntensity = 1 - directionalLight.intensity;
 
-					} );
+							}
 
-					render();
+						} );
 
-				} );
-
-				document.body.addEventListener( 'mouseout', function () {
-
-					scene.traverse( function ( child ) {
-
-						if ( child.isMesh ) {
-
-							child.material.envMapIntensity = 0;
-							directionalLight.intensity = 1;
-
-						}
+						render();
 
 					} );
-
-					render();
-
-				} );
 
 			}
 
 			function createObjects() {
 
 				let radianceMap = null;
-				new RGBELoader()
-					.setDataType( THREE.UnsignedByteType )
+				new HDRLoader()
 					// .setDataType( THREE.FloatType )
 					.setPath( 'textures/equirectangular/' )
 					.load( 'spot1Lux.hdr', function ( texture ) {

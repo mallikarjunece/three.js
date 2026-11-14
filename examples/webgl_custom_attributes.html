@@ -4,6 +4,10 @@
 		<title>three.js webgl - custom attributes</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - custom attributes">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_custom_attributes.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_custom_attributes.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 
@@ -56,11 +60,20 @@
 
 		</script>
 
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import Stats from './jsm/libs/stats.module.js';
+			import Stats from 'three/addons/libs/stats.module.js';
 
 			let renderer, scene, camera, stats;
 
@@ -69,7 +82,6 @@
 			let displacement, noise;
 
 			init();
-			animate();
 
 			function init() {
 
@@ -81,13 +93,13 @@
 
 				uniforms = {
 
-					"amplitude": { value: 1.0 },
-					"color": { value: new THREE.Color( 0xff2200 ) },
-					"colorTexture": { value: new THREE.TextureLoader().load( "textures/water.jpg" ) }
+					'amplitude': { value: 1.0 },
+					'color': { value: new THREE.Color( 0xff2200 ) },
+					'colorTexture': { value: new THREE.TextureLoader().load( 'textures/water.jpg' ) }
 
 				};
 
-				uniforms[ "colorTexture" ].value.wrapS = uniforms[ "colorTexture" ].value.wrapT = THREE.RepeatWrapping;
+				uniforms[ 'colorTexture' ].value.wrapS = uniforms[ 'colorTexture' ].value.wrapT = THREE.RepeatWrapping;
 
 				const shaderMaterial = new THREE.ShaderMaterial( {
 
@@ -119,6 +131,7 @@
 				renderer = new THREE.WebGLRenderer();
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setAnimationLoop( animate );
 
 				const container = document.getElementById( 'container' );
 				container.appendChild( renderer.domElement );
@@ -143,8 +156,6 @@
 
 			function animate() {
 
-				requestAnimationFrame( animate );
-
 				render();
 				stats.update();
 
@@ -156,8 +167,8 @@
 
 				sphere.rotation.y = sphere.rotation.z = 0.01 * time;
 
-				uniforms[ "amplitude" ].value = 2.5 * Math.sin( sphere.rotation.y * 0.125 );
-				uniforms[ "color" ].value.offsetHSL( 0.0005, 0, 0 );
+				uniforms[ 'amplitude' ].value = 2.5 * Math.sin( sphere.rotation.y * 0.125 );
+				uniforms[ 'color' ].value.offsetHSL( 0.0005, 0, 0 );
 
 				for ( let i = 0; i < displacement.length; i ++ ) {
 

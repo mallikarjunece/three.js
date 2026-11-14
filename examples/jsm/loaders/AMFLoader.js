@@ -5,43 +5,56 @@ import {
 	Float32BufferAttribute,
 	Group,
 	Loader,
-	LoaderUtils,
 	Mesh,
 	MeshPhongMaterial
-} from '../../../build/three.module.js';
-import * as fflate from '../libs/fflate.module.js';
+} from 'three';
+import { unzipSync } from '../libs/fflate.module.js';
 
 /**
- * Description: Early release of an AMF Loader following the pattern of the
- * example loaders in the three.js project.
+ * A loader for the AMF format.
  *
- * More information about the AMF format: http://amf.wikispaces.com
+ * The loader supports materials, color and ZIP compressed files.
+ * No constellation support (yet).
  *
- * Usage:
- *	const loader = new AMFLoader();
- *	loader.load('/path/to/project.amf', function(objecttree) {
- *		scene.add(objecttree);
- *	});
+ * ```js
+ * const loader = new AMFLoader();
  *
- * Materials now supported, material colors supported
- * Zip support, requires fflate
- * No constellation support (yet)!
+ * const object = await loader.loadAsync( './models/amf/rook.amf' );
+ * scene.add( object );
+ * ```
  *
+ * @augments Loader
+ * @three_import import { AMFLoader } from 'three/addons/loaders/AMFLoader.js';
  */
-
 class AMFLoader extends Loader {
 
+	/**
+	 * Constructs a new AMF loader.
+	 *
+	 * @param {LoadingManager} [manager] - The loading manager.
+	 */
 	constructor( manager ) {
 
 		super( manager );
 
 	}
 
+	/**
+	 * Starts loading from the given URL and passes the loaded AMF asset
+	 * to the `onLoad()` callback.
+	 *
+	 * @param {string} url - The path/URL of the file to be loaded. This can also be a data URI.
+	 * @param {function(Group)} onLoad - Executed when the loading process has been finished.
+	 * @param {onProgressCallback} onProgress - Executed while the loading is in progress.
+	 * @param {onErrorCallback} onError - Executed when errors occur.
+	 */
 	load( url, onLoad, onProgress, onError ) {
 
 		const scope = this;
 
 		const loader = new FileLoader( scope.manager );
+		loader.setPriority( scope.priority );
+		loader.setCache( scope.cache );
 		loader.setPath( scope.path );
 		loader.setResponseType( 'arraybuffer' );
 		loader.setRequestHeader( scope.requestHeader );
@@ -72,6 +85,12 @@ class AMFLoader extends Loader {
 
 	}
 
+	/**
+	 * Parses the given AMF data and returns the resulting group.
+	 *
+	 * @param {ArrayBuffer} data - The raw AMF asset data as an array buffer.
+	 * @return {Group} A group representing the parsed asset.
+	 */
 	parse( data ) {
 
 		function loadDocument( data ) {
@@ -88,7 +107,7 @@ class AMFLoader extends Loader {
 
 				try {
 
-					zip = fflate.unzipSync( new Uint8Array( data ) ); // eslint-disable-line no-undef
+					zip = unzipSync( new Uint8Array( data ) );
 
 				} catch ( e ) {
 
@@ -103,7 +122,7 @@ class AMFLoader extends Loader {
 
 				for ( file in zip ) {
 
-					if ( file.toLowerCase().substr( - 4 ) === '.amf' ) {
+					if ( file.toLowerCase().slice( - 4 ) === '.amf' ) {
 
 						break;
 
@@ -116,7 +135,7 @@ class AMFLoader extends Loader {
 
 			}
 
-			const fileText = LoaderUtils.decodeText( view );
+			const fileText = new TextDecoder().decode( view );
 			const xmlData = new DOMParser().parseFromString( fileText, 'application/xml' );
 
 			if ( xmlData.documentElement.nodeName.toLowerCase() !== 'amf' ) {
@@ -215,19 +234,19 @@ class AMFLoader extends Loader {
 
 				if ( matColor.nodeName === 'r' ) {
 
-					color.r = matColor.textContent;
+					color.r = parseFloat( matColor.textContent );
 
 				} else if ( matColor.nodeName === 'g' ) {
 
-					color.g = matColor.textContent;
+					color.g = parseFloat( matColor.textContent );
 
 				} else if ( matColor.nodeName === 'b' ) {
 
-					color.b = matColor.textContent;
+					color.b = parseFloat( matColor.textContent );
 
 				} else if ( matColor.nodeName === 'a' ) {
 
-					color.a = matColor.textContent;
+					color.a = parseFloat( matColor.textContent );
 
 				}
 
@@ -239,7 +258,7 @@ class AMFLoader extends Loader {
 
 		function loadMeshVolume( node ) {
 
-			const volume = { name: '', triangles: [], materialid: null };
+			const volume = { name: '', triangles: [], materialId: null };
 
 			let currVolumeNode = node.firstElementChild;
 
@@ -435,7 +454,11 @@ class AMFLoader extends Loader {
 		}
 
 		const sceneObject = new Group();
-		const defaultMaterial = new MeshPhongMaterial( { color: 0xaaaaff, flatShading: true } );
+		const defaultMaterial = new MeshPhongMaterial( {
+			name: Loader.DEFAULT_MATERIAL_NAME,
+			color: 0xaaaaff,
+			flatShading: true
+		} );
 
 		sceneObject.name = amfName;
 		sceneObject.userData.author = amfAuthor;

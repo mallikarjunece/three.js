@@ -4,6 +4,10 @@
 		<title>three.js webgl - geometry - spline extrusion</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - geometry - spline extrusion">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_geometry_extrude_splines.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_geometry_extrude_splines.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 		<style>
 			body {
@@ -19,19 +23,27 @@
 
 		<div id="container"></div>
 		<div id="info">
-			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - spline extrusion examples<br/>
-			by <a href="http://www.lab4games.net/zz85/blog" target="_blank" rel="noopener">zz85</a>
+			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - spline extrusion examples
 		</div>
+
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
 
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import Stats from './jsm/libs/stats.module.js';
-			import { GUI } from './jsm/libs/dat.gui.module.js';
+			import Stats from 'three/addons/libs/stats.module.js';
+			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
-			import { Curves } from './jsm/curves/CurveExtras.js';
-			import { OrbitControls } from './jsm/controls/OrbitControls.js';
+			import * as Curves from 'three/addons/curves/CurveExtras.js';
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 			let container, stats;
 
@@ -154,7 +166,6 @@
 			}
 
 			init();
-			animate();
 
 			function init() {
 
@@ -172,7 +183,9 @@
 
 				// light
 
-				const light = new THREE.DirectionalLight( 0xffffff );
+				scene.add( new THREE.AmbientLight( 0xffffff ) );
+
+				const light = new THREE.DirectionalLight( 0xffffff, 1.5 );
 				light.position.set( 0, 0, 1 );
 				scene.add( light );
 
@@ -202,6 +215,7 @@
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setAnimationLoop( animate );
 				container.appendChild( renderer.domElement );
 
 				// stats
@@ -211,7 +225,7 @@
 
 				// dat.GUI
 
-				const gui = new GUI( { width: 300 } );
+				const gui = new GUI( { width: 285 } );
 
 				const folderGeometry = gui.addFolder( 'Geometry' );
 				folderGeometry.add( params, 'spline', Object.keys( splines ) ).onChange( function () {
@@ -280,8 +294,6 @@
 
 			function animate() {
 
-				requestAnimationFrame( animate );
-
 				render();
 				stats.update();
 
@@ -320,7 +332,7 @@
 				splineCamera.position.copy( position );
 				cameraEye.position.copy( position );
 
-				// using arclength for stablization in look ahead
+				// using arclength for stabilization in look ahead
 
 				tubeGeometry.parameters.path.getPointAt( ( t + 30 / tubeGeometry.parameters.path.getLength() ) % 1, lookAt );
 				lookAt.multiplyScalar( params.scale );

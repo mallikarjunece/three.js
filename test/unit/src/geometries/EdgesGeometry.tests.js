@@ -1,17 +1,8 @@
-/* global QUnit */
+import { EdgesGeometry } from '../../../../src/geometries/EdgesGeometry.js';
 
-import { EdgesGeometry } from '../../../../src/geometries/EdgesGeometry';
-import { BufferGeometry } from '../../../../src/core/BufferGeometry';
-import { BufferAttribute } from '../../../../src/core/BufferAttribute';
-import { Vector3 } from '../../../../src/math/Vector3';
-
-// DEBUGGING
-import { Scene } from '../../../../src/scenes/Scene';
-import { Mesh } from '../../../../src/objects/Mesh';
-import { LineSegments } from '../../../../src/objects/LineSegments';
-import { LineBasicMaterial } from '../../../../src/materials/LineBasicMaterial';
-import { WebGLRenderer } from '../../../../src/renderers/WebGLRenderer';
-import { PerspectiveCamera } from '../../../../src/cameras/PerspectiveCamera';
+import { BufferGeometry } from '../../../../src/core/BufferGeometry.js';
+import { BufferAttribute } from '../../../../src/core/BufferAttribute.js';
+import { Vector3 } from '../../../../src/math/Vector3.js';
 
 //
 // HELPERS
@@ -19,19 +10,18 @@ import { PerspectiveCamera } from '../../../../src/cameras/PerspectiveCamera';
 
 function testEdges( vertList, idxList, numAfter, assert ) {
 
-	var geoms = createGeometries( vertList, idxList );
+	const geoms = createGeometries( vertList, idxList );
 
-	for ( var i = 0; i < geoms.length; i ++ ) {
+	for ( let i = 0; i < geoms.length; i ++ ) {
 
-		var geom = geoms[ i ];
+		const geom = geoms[ i ];
 
-		var numBefore = idxList.length;
-		assert.equal( countEdges( geom ), numBefore, "Edges before!" );
+		const numBefore = idxList.length;
+		assert.equal( countEdges( geom ), numBefore, 'Edges before!' );
 
-		var egeom = new EdgesGeometry( geom );
+		const egeom = new EdgesGeometry( geom );
 
-		assert.equal( countEdges( egeom ), numAfter, "Edges after!" );
-		output( geom, egeom );
+		assert.equal( countEdges( egeom ), numAfter, 'Edges after!' );
 
 	}
 
@@ -39,31 +29,31 @@ function testEdges( vertList, idxList, numAfter, assert ) {
 
 function createGeometries( vertList, idxList ) {
 
-	var geomIB = createIndexedBufferGeometry( vertList, idxList );
-	var geomDC = addDrawCalls( geomIB.clone() );
+	const geomIB = createIndexedBufferGeometry( vertList, idxList );
+	const geomDC = addDrawCalls( geomIB.clone() );
 	return [ geomIB, geomDC ];
 
 }
 
 function createIndexedBufferGeometry( vertList, idxList ) {
 
-	var geom = new BufferGeometry();
+	const geom = new BufferGeometry();
 
-	var indexTable = [];
-	var numTris = idxList.length / 3;
-	var numVerts = 0;
+	const indexTable = [];
+	const numTris = idxList.length / 3;
+	let numVerts = 0;
 
-	var indices = new Uint32Array( numTris * 3 );
-	var vertices = new Float32Array( vertList.length * 3 );
+	const indices = new Uint32Array( numTris * 3 );
+	let vertices = new Float32Array( vertList.length * 3 );
 
-	for ( var i = 0; i < numTris; i ++ ) {
+	for ( let i = 0; i < numTris; i ++ ) {
 
-		for ( var j = 0; j < 3; j ++ ) {
+		for ( let j = 0; j < 3; j ++ ) {
 
-			var idx = idxList[ 3 * i + j ];
+			const idx = idxList[ 3 * i + j ];
 			if ( indexTable[ idx ] === undefined ) {
 
-				var v = vertList[ idx ];
+				const v = vertList[ idx ];
 				vertices[ 3 * numVerts ] = v.x;
 				vertices[ 3 * numVerts + 1 ] = v.y;
 				vertices[ 3 * numVerts + 2 ] = v.z;
@@ -85,20 +75,18 @@ function createIndexedBufferGeometry( vertList, idxList ) {
 	geom.setIndex( new BufferAttribute( indices, 1 ) );
 	geom.setAttribute( 'position', new BufferAttribute( vertices, 3 ) );
 
-	geom.computeFaceNormals();
-
 	return geom;
 
 }
 
 function addDrawCalls( geometry ) {
 
-	var numTris = geometry.index.count / 3;
+	const numTris = geometry.index.count / 3;
 
-	for ( var i = 0; i < numTris; i ++ ) {
+	for ( let i = 0; i < numTris; i ++ ) {
 
-		var start = i * 3;
-		var count = 3;
+		const start = i * 3;
+		const count = 3;
 
 		geometry.addGroup( start, count );
 
@@ -122,7 +110,7 @@ function countEdges( geom ) {
 
 	}
 
-	var indices = geom.index;
+	const indices = geom.index;
 	if ( indices ) {
 
 		return indices.count;
@@ -133,80 +121,11 @@ function countEdges( geom ) {
 
 }
 
-//
-// DEBUGGING
-//
-var DEBUG = false;
-var renderer;
-var camera;
-var scene = new Scene();
-var xoffset = 0;
-
-function output( geom, egeom ) {
-
-	if ( DEBUG !== true ) return;
-
-	if ( ! renderer ) initDebug();
-
-	var mesh = new Mesh( geom, undefined );
-	var edges = new LineSegments( egeom, new LineBasicMaterial( { color: 'black' } ) );
-
-	mesh.position.setX( xoffset );
-	edges.position.setX( xoffset ++ );
-	scene.add( mesh );
-	scene.add( edges );
-
-	if ( scene.children.length % 8 === 0 ) {
-
-		xoffset += 2;
-
-	}
-
-}
-
-function initDebug() {
-
-	renderer = new WebGLRenderer( {
-
-		antialias: true
-
-	} );
-
-	var width = 600;
-	var height = 480;
-
-	renderer.setSize( width, height );
-	renderer.setClearColor( 0xCCCCCC );
-
-	camera = new PerspectiveCamera( 45, width / height, 1, 100 );
-	camera.position.x = 30;
-	camera.position.z = 40;
-	camera.lookAt( new Vector3( 30, 0, 0 ) );
-
-	document.body.appendChild( renderer.domElement );
-
-	var controls = new THREE.OrbitControls( camera, renderer.domElement ); // TODO: please do somethings for that -_-'
-	controls.target = new Vector3( 30, 0, 0 );
-
-	animate();
-
-	function animate() {
-
-		requestAnimationFrame( animate );
-
-		controls.update();
-
-		renderer.render( scene, camera );
-
-	}
-
-}
-
 export default QUnit.module( 'Geometries', () => {
 
 	QUnit.module( 'EdgesGeometry', () => {
 
-		var vertList = [
+		const vertList = [
 			new Vector3( 0, 0, 0 ),
 			new Vector3( 1, 0, 0 ),
 			new Vector3( 1, 1, 0 ),
@@ -215,41 +134,57 @@ export default QUnit.module( 'Geometries', () => {
 		];
 
 		// INHERITANCE
-		QUnit.todo( "Extending", ( assert ) => {
+		QUnit.test( 'Extending', ( assert ) => {
 
-			assert.ok( false, "everything's gonna be alright" );
+			const object = new EdgesGeometry();
+			assert.strictEqual(
+				object instanceof BufferGeometry, true,
+				'EdgesGeometry extends from BufferGeometry'
+			);
 
 		} );
 
 		// INSTANCING
-		QUnit.todo( "Instancing", ( assert ) => {
+		QUnit.test( 'Instancing', ( assert ) => {
 
-			assert.ok( false, "everything's gonna be alright" );
+			const object = new EdgesGeometry();
+			assert.ok( object, 'Can instantiate an EdgesGeometry.' );
+
+		} );
+
+		// PROPERTIES
+		QUnit.test( 'type', ( assert ) => {
+
+			const object = new EdgesGeometry();
+			assert.ok(
+				object.type === 'EdgesGeometry',
+				'EdgesGeometry.type should be EdgesGeometry'
+			);
 
 		} );
 
 		// OTHERS
-		QUnit.test( "singularity", ( assert ) => {
+		QUnit.test( 'singularity', ( assert ) => {
 
 			testEdges( vertList, [ 1, 1, 1 ], 0, assert );
 
 		} );
 
-		QUnit.test( "needle", ( assert ) => {
+		QUnit.test( 'needle', ( assert ) => {
 
 			testEdges( vertList, [ 0, 0, 1 ], 0, assert );
 
 		} );
 
-		QUnit.test( "single triangle", ( assert ) => {
+		QUnit.test( 'single triangle', ( assert ) => {
 
 			testEdges( vertList, [ 0, 1, 2 ], 3, assert );
 
 		} );
 
-		QUnit.test( "two isolated triangles", ( assert ) => {
+		QUnit.test( 'two isolated triangles', ( assert ) => {
 
-			var vertList = [
+			const vertList = [
 				new Vector3( 0, 0, 0 ),
 				new Vector3( 1, 0, 0 ),
 				new Vector3( 1, 1, 0 ),
@@ -262,37 +197,37 @@ export default QUnit.module( 'Geometries', () => {
 
 		} );
 
-		QUnit.test( "two flat triangles", ( assert ) => {
+		QUnit.test( 'two flat triangles', ( assert ) => {
 
 			testEdges( vertList, [ 0, 1, 2, 0, 2, 3 ], 4, assert );
 
 		} );
 
-		QUnit.test( "two flat triangles, inverted", ( assert ) => {
+		QUnit.test( 'two flat triangles, inverted', ( assert ) => {
 
 			testEdges( vertList, [ 0, 1, 2, 0, 3, 2 ], 5, assert );
 
 		} );
 
-		QUnit.test( "two non-coplanar triangles", ( assert ) => {
+		QUnit.test( 'two non-coplanar triangles', ( assert ) => {
 
 			testEdges( vertList, [ 0, 1, 2, 0, 4, 2 ], 5, assert );
 
 		} );
 
-		QUnit.test( "three triangles, coplanar first", ( assert ) => {
+		QUnit.test( 'three triangles, coplanar first', ( assert ) => {
 
 			testEdges( vertList, [ 0, 2, 3, 0, 1, 2, 0, 4, 2 ], 7, assert );
 
 		} );
 
-		QUnit.test( "three triangles, coplanar last", ( assert ) => {
+		QUnit.test( 'three triangles, coplanar last', ( assert ) => {
 
 			testEdges( vertList, [ 0, 1, 2, 0, 4, 2, 0, 2, 3 ], 6, assert ); // Should be 7
 
 		} );
 
-		QUnit.test( "tetrahedron", ( assert ) => {
+		QUnit.test( 'tetrahedron', ( assert ) => {
 
 			testEdges( vertList, [ 0, 1, 2, 0, 1, 4, 0, 4, 2, 1, 2, 4 ], 6, assert );
 

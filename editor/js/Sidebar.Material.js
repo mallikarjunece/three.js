@@ -1,6 +1,6 @@
-import * as THREE from '../../build/three.module.js';
+import * as THREE from 'three';
 
-import { UIButton, UIInput, UIPanel, UIRow, UISelect, UIText } from './libs/ui.js';
+import { UIButton, UIInput, UIPanel, UIRow, UISelect, UIText, UITextArea } from './libs/ui.js';
 
 import { SetMaterialCommand } from './commands/SetMaterialCommand.js';
 import { SetMaterialValueCommand } from './commands/SetMaterialValueCommand.js';
@@ -30,7 +30,7 @@ function SidebarMaterial( editor ) {
 
 	const materialSlotRow = new UIRow();
 
-	materialSlotRow.add( new UIText( strings.getKey( 'sidebar/material/slot' ) ).setWidth( '90px' ) );
+	materialSlotRow.add( new UIText( strings.getKey( 'sidebar/material/slot' ) ).setClass( 'Label' ) );
 
 	const materialSlotSelect = new UISelect().setWidth( '170px' ).setFontSize( '12px' ).onChange( update );
 	materialSlotSelect.setOptions( { 0: '' } ).setValue( 0 );
@@ -43,7 +43,7 @@ function SidebarMaterial( editor ) {
 	const materialClassRow = new UIRow();
 	const materialClass = new UISelect().setWidth( '150px' ).setFontSize( '12px' ).onChange( update );
 
-	materialClassRow.add( new UIText( strings.getKey( 'sidebar/material/type' ) ).setWidth( '90px' ) );
+	materialClassRow.add( new UIText( strings.getKey( 'sidebar/material/type' ) ).setClass( 'Label' ) );
 	materialClassRow.add( materialClass );
 
 	container.add( materialClassRow );
@@ -60,7 +60,7 @@ function SidebarMaterial( editor ) {
 
 	} );
 
-	materialUUIDRow.add( new UIText( strings.getKey( 'sidebar/material/uuid' ) ).setWidth( '90px' ) );
+	materialUUIDRow.add( new UIText( strings.getKey( 'sidebar/material/uuid' ) ).setClass( 'Label' ) );
 	materialUUIDRow.add( materialUUID );
 	materialUUIDRow.add( materialUUIDRenew );
 
@@ -75,7 +75,7 @@ function SidebarMaterial( editor ) {
 
 	} );
 
-	materialNameRow.add( new UIText( strings.getKey( 'sidebar/material/name' ) ).setWidth( '90px' ) );
+	materialNameRow.add( new UIText( strings.getKey( 'sidebar/material/name' ) ).setClass( 'Label' ) );
 	materialNameRow.add( materialName );
 
 	container.add( materialNameRow );
@@ -110,6 +110,11 @@ function SidebarMaterial( editor ) {
 	const materialReflectivity = new SidebarMaterialNumberProperty( editor, 'reflectivity', strings.getKey( 'sidebar/material/reflectivity' ) );
 	container.add( materialReflectivity );
 
+	// ior
+
+	const materialIOR = new SidebarMaterialNumberProperty( editor, 'ior', strings.getKey( 'sidebar/material/ior' ), [ 1, 2.333 ], 3 );
+	container.add( materialIOR );
+
 	// roughness
 
 	const materialRoughness = new SidebarMaterialNumberProperty( editor, 'roughness', strings.getKey( 'sidebar/material/roughness' ), [ 0, 1 ] );
@@ -130,6 +135,41 @@ function SidebarMaterial( editor ) {
 	const materialClearcoatRoughness = new SidebarMaterialNumberProperty( editor, 'clearcoatRoughness', strings.getKey( 'sidebar/material/clearcoatroughness' ), [ 0, 1 ] );
 	container.add( materialClearcoatRoughness );
 
+	// dispersion
+
+	const materialDispersion = new SidebarMaterialNumberProperty( editor, 'dispersion', strings.getKey( 'sidebar/material/dispersion' ), [ 0, 10 ] );
+	container.add( materialDispersion );
+
+	// iridescence
+
+	const materialIridescence = new SidebarMaterialNumberProperty( editor, 'iridescence', strings.getKey( 'sidebar/material/iridescence' ), [ 0, 1 ] );
+	container.add( materialIridescence );
+
+	// iridescenceIOR
+
+	const materialIridescenceIOR = new SidebarMaterialNumberProperty( editor, 'iridescenceIOR', strings.getKey( 'sidebar/material/iridescenceIOR' ), [ 1, 5 ] );
+	container.add( materialIridescenceIOR );
+
+	// iridescenceThicknessMax
+
+	const materialIridescenceThicknessMax = new SidebarMaterialNumberProperty( editor, 'iridescenceThicknessMaximum', strings.getKey( 'sidebar/material/iridescenceThicknessMax' ), [ 0, Infinity ], 0, 10, 1, 'nm' );
+	container.add( materialIridescenceThicknessMax );
+
+	// sheen
+
+	const materialSheen = new SidebarMaterialNumberProperty( editor, 'sheen', strings.getKey( 'sidebar/material/sheen' ), [ 0, 1 ] );
+	container.add( materialSheen );
+
+	// sheen roughness
+
+	const materialSheenRoughness = new SidebarMaterialNumberProperty( editor, 'sheenRoughness', strings.getKey( 'sidebar/material/sheenroughness' ), [ 0, 1 ] );
+	container.add( materialSheenRoughness );
+
+	// sheen color
+
+	const materialSheenColor = new SidebarMaterialColorProperty( editor, 'sheenColor', strings.getKey( 'sidebar/material/sheencolor' ) );
+	container.add( materialSheenColor );
+
 	// transmission
 
 	const materialTransmission = new SidebarMaterialNumberProperty( editor, 'transmission', strings.getKey( 'sidebar/material/transmission' ), [ 0, 1 ] );
@@ -142,8 +182,8 @@ function SidebarMaterial( editor ) {
 
 	// attenuation tint
 
-	const materialAttenuationTint = new SidebarMaterialColorProperty( editor, 'attenuationTint', strings.getKey( 'sidebar/material/attenuationTint' ) );
-	container.add( materialAttenuationTint );
+	const materialAttenuationColor = new SidebarMaterialColorProperty( editor, 'attenuationColor', strings.getKey( 'sidebar/material/attenuationColor' ) );
+	container.add( materialAttenuationColor );
 
 	// thickness
 
@@ -200,10 +240,20 @@ function SidebarMaterial( editor ) {
 	const materialNormalMap = new SidebarMaterialMapProperty( editor, 'normalMap', strings.getKey( 'sidebar/material/normalmap' ) );
 	container.add( materialNormalMap );
 
+	// clearcoat map
+
+	const materialClearcoatMap = new SidebarMaterialMapProperty( editor, 'clearcoatMap', strings.getKey( 'sidebar/material/clearcoatmap' ) );
+	container.add( materialClearcoatMap );
+
 	// clearcoat normal map
 
 	const materialClearcoatNormalMap = new SidebarMaterialMapProperty( editor, 'clearcoatNormalMap', strings.getKey( 'sidebar/material/clearcoatnormalmap' ) );
 	container.add( materialClearcoatNormalMap );
+
+	// clearcoat roughness map
+
+	const materialClearcoatRoughnessMap = new SidebarMaterialMapProperty( editor, 'clearcoatRoughnessMap', strings.getKey( 'sidebar/material/clearcoatroughnessmap' ) );
+	container.add( materialClearcoatRoughnessMap );
 
 	// displacement map
 
@@ -219,6 +269,26 @@ function SidebarMaterial( editor ) {
 
 	const materialMetalnessMap = new SidebarMaterialMapProperty( editor, 'metalnessMap', strings.getKey( 'sidebar/material/metalnessmap' ) );
 	container.add( materialMetalnessMap );
+
+	// iridescence map
+
+	const materialIridescenceMap = new SidebarMaterialMapProperty( editor, 'iridescenceMap', strings.getKey( 'sidebar/material/iridescencemap' ) );
+	container.add( materialIridescenceMap );
+
+	// sheen color map
+
+	const materialSheenColorMap = new SidebarMaterialMapProperty( editor, 'sheenColorMap', strings.getKey( 'sidebar/material/sheencolormap' ) );
+	container.add( materialSheenColorMap );
+
+	// sheen roughness map
+
+	const materialSheenRoughnessMap = new SidebarMaterialMapProperty( editor, 'sheenRoughnessMap', strings.getKey( 'sidebar/material/sheenroughnessmap' ) );
+	container.add( materialSheenRoughnessMap );
+
+	// iridescence thickness map
+
+	const materialIridescenceThicknessMap = new SidebarMaterialMapProperty( editor, 'iridescenceThicknessMap', strings.getKey( 'sidebar/material/iridescencethicknessmap' ) );
+	container.add( materialIridescenceThicknessMap );
 
 	// env map
 
@@ -239,6 +309,16 @@ function SidebarMaterial( editor ) {
 
 	const materialGradientMap = new SidebarMaterialMapProperty( editor, 'gradientMap', strings.getKey( 'sidebar/material/gradientmap' ) );
 	container.add( materialGradientMap );
+
+	// transmission map
+
+	const transmissionMap = new SidebarMaterialMapProperty( editor, 'transmissionMap', strings.getKey( 'sidebar/material/transmissionmap' ) );
+	container.add( transmissionMap );
+
+	// thickness map
+
+	const thicknessMap = new SidebarMaterialMapProperty( editor, 'thicknessMap', strings.getKey( 'sidebar/material/thicknessmap' ) );
+	container.add( thicknessMap );
 
 	// side
 
@@ -290,6 +370,11 @@ function SidebarMaterial( editor ) {
 	const materialTransparent = new SidebarMaterialBooleanProperty( editor, 'transparent', strings.getKey( 'sidebar/material/transparent' ) );
 	container.add( materialTransparent );
 
+	// forceSinglePass
+
+	const materialForceSinglePass = new SidebarMaterialBooleanProperty( editor, 'forceSinglePass', strings.getKey( 'sidebar/material/forcesinglepass' ) );
+	container.add( materialForceSinglePass );
+
 	// alpha test
 
 	const materialAlphaTest = new SidebarMaterialNumberProperty( editor, 'alphaTest', strings.getKey( 'sidebar/material/alphatest' ), [ 0, 1 ] );
@@ -310,6 +395,60 @@ function SidebarMaterial( editor ) {
 	const materialWireframe = new SidebarMaterialBooleanProperty( editor, 'wireframe', strings.getKey( 'sidebar/material/wireframe' ) );
 	container.add( materialWireframe );
 
+	// userData
+
+	const materialUserDataRow = new UIRow();
+	const materialUserData = new UITextArea().setWidth( '150px' ).setHeight( '40px' ).setFontSize( '12px' ).onChange( update );
+	materialUserData.onKeyUp( function () {
+
+		try {
+
+			JSON.parse( materialUserData.getValue() );
+
+			materialUserData.dom.classList.add( 'success' );
+			materialUserData.dom.classList.remove( 'fail' );
+
+		} catch ( error ) {
+
+			materialUserData.dom.classList.remove( 'success' );
+			materialUserData.dom.classList.add( 'fail' );
+
+		}
+
+	} );
+
+	materialUserDataRow.add( new UIText( strings.getKey( 'sidebar/material/userdata' ) ).setClass( 'Label' ) );
+	materialUserDataRow.add( materialUserData );
+
+	container.add( materialUserDataRow );
+
+	// Export JSON
+
+	const exportJson = new UIButton( strings.getKey( 'sidebar/material/export' ) );
+	exportJson.setMarginLeft( '120px' );
+	exportJson.onClick( function () {
+
+		const object = editor.selected;
+		const material = Array.isArray( object.material ) ? object.material[ currentMaterialSlot ] : object.material;
+
+		let output = material.toJSON();
+
+		try {
+
+			output = JSON.stringify( output, null, '\t' );
+			output = output.replace( /[\n\t]+([\d\.e\-\[\]]+)/g, '$1' );
+
+		} catch ( error ) {
+
+			output = JSON.stringify( output );
+
+		}
+
+		editor.utils.save( new Blob( [ output ] ), `${ materialName.getValue() || 'material' }.json` );
+
+	} );
+	container.add( exportJson );
+
 	//
 
 	function update() {
@@ -318,7 +457,11 @@ function SidebarMaterial( editor ) {
 
 		currentMaterialSlot = parseInt( materialSlotSelect.getValue() );
 
-		if ( currentMaterialSlot !== previousSelectedSlot ) refreshUI();
+		if ( currentMaterialSlot !== previousSelectedSlot ) {
+
+			editor.signals.materialChanged.dispatch( currentObject, currentMaterialSlot );
+
+		}
 
 		let material = editor.getObjectMaterial( currentObject, currentMaterialSlot );
 
@@ -340,25 +483,72 @@ function SidebarMaterial( editor ) {
 
 				}
 
-				if ( Array.isArray( currentObject.material ) ) {
+				const currentMaterial = currentObject.material;
 
-					// don't remove the entire multi-material. just the material of the selected slot
+				if ( material.type === 'MeshPhysicalMaterial' && currentMaterial.type === 'MeshStandardMaterial' ) {
 
-					editor.removeMaterial( currentObject.material[ currentMaterialSlot ] );
+					// TODO Find a easier to maintain approach
 
-				} else {
+					const properties = [
+						'color', 'emissive', 'roughness', 'metalness', 'map', 'emissiveMap', 'alphaMap',
+						'bumpMap', 'normalMap', 'normalScale', 'displacementMap', 'roughnessMap', 'metalnessMap',
+						'envMap', 'lightMap', 'aoMap', 'side'
+					];
 
-					editor.removeMaterial( currentObject.material );
+					for ( const property of properties ) {
+
+						const value = currentMaterial[ property ];
+
+						if ( value === null ) continue;
+
+						if ( value[ 'clone' ] !== undefined ) {
+
+							material[ property ] = value.clone();
+
+						} else {
+
+							material[ property ] = value;
+
+						}
+
+					}
 
 				}
 
-				editor.execute( new SetMaterialCommand( editor, currentObject, material, currentMaterialSlot ), 'New Material: ' + materialClass.getValue() );
+				if ( Array.isArray( currentMaterial ) ) {
+
+					// don't remove the entire multi-material. just the material of the selected slot
+
+					editor.removeMaterial( currentMaterial[ currentMaterialSlot ] );
+
+				} else {
+
+					editor.removeMaterial( currentMaterial );
+
+				}
+
+				editor.execute( new SetMaterialCommand( editor, currentObject, material, currentMaterialSlot ), strings.getKey( 'command/SetMaterial' ) + ': ' + materialClass.getValue() );
 				editor.addMaterial( material );
 				// TODO Copy other references in the scene graph
 				// keeping name and UUID then.
 				// Also there should be means to create a unique
 				// copy for the current object explicitly and to
 				// attach the current material to other objects.
+
+			}
+
+			try {
+
+				const userData = JSON.parse( materialUserData.getValue() );
+				if ( JSON.stringify( material.userData ) != JSON.stringify( userData ) ) {
+
+					editor.execute( new SetMaterialValueCommand( editor, currentObject, 'userData', userData, currentMaterialSlot ) );
+
+				}
+
+			} catch ( exception ) {
+
+				console.warn( exception );
 
 			}
 
@@ -443,6 +633,19 @@ function SidebarMaterial( editor ) {
 		materialClass.setValue( material.type );
 
 		setRowVisibility();
+
+		try {
+
+			materialUserData.setValue( JSON.stringify( material.userData, null, '  ' ) );
+
+		} catch ( error ) {
+
+			console.log( error );
+
+		}
+
+		materialUserData.setBorderColor( 'transparent' );
+		materialUserData.setBackgroundColor( '' );
 
 	}
 

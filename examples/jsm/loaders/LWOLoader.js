@@ -1,20 +1,6 @@
-/**
- * @version 1.1.1
- *
- * @desc Load files in LWO3 and LWO2 format on Three.js
- *
- * LWO3 format specification:
- * 	http://static.lightwave3d.com/sdk/2018/html/filefmts/lwo3.html
- *
- * LWO2 format specification:
- * 	http://static.lightwave3d.com/sdk/2018/html/filefmts/lwo2.html
- *
- **/
-
 import {
 	AddOperation,
 	BackSide,
-	BufferAttribute,
 	BufferGeometry,
 	ClampToEdgeWrapping,
 	Color,
@@ -35,24 +21,62 @@ import {
 	Points,
 	PointsMaterial,
 	RepeatWrapping,
+	SRGBColorSpace,
 	TextureLoader,
-	Vector2
-} from '../../../build/three.module.js';
+	Vector2,
+	Vector3
+} from 'three';
 
 import { IFFParser } from './lwo/IFFParser.js';
 
 let _lwoTree;
 
+/**
+ * A loader for the LWO format.
+ *
+ * LWO3 and LWO2 formats are supported.
+ *
+ * References:
+ * - [LWO3 format specification](https://static.lightwave3d.com/sdk/2019/html/filefmts/lwo3.html)
+ * - [LWO2 format specification](https://static.lightwave3d.com/sdk/2019/html/filefmts/lwo2.html)
+ *
+ * ```js
+ * const loader = new LWOLoader();
+ * const lwoData = await loader.loadAsync( 'models/lwo/Objects/LWO3/Demo.lwo' );
+ *
+ * const mesh = object.meshes[ 0 ];
+ * scene.add( mesh );
+ * ```
+ *
+ * @augments Loader
+ * @three_import import { LWOLoader } from 'three/addons/loaders/LWOLoader.js';
+ * @deprecated since r185.
+ */
 class LWOLoader extends Loader {
 
-	constructor( manager, parameters = {} ) {
+	/**
+	 * Constructs a new LWO loader.
+	 *
+	 * @param {LoadingManager} [manager] - The loading manager.
+	 * @deprecated since r185.
+	 */
+	constructor( manager ) {
 
 		super( manager );
 
-		this.resourcePath = ( parameters.resourcePath !== undefined ) ? parameters.resourcePath : '';
+		console.warn( 'THREE.LWOLoader: The loader has been deprecated and will be removed with r195. Export your LWO files to glTF before using them on the web.' ); // @deprecated, r185
 
 	}
 
+	/**
+	 * Starts loading from the given URL and passes the loaded LWO asset
+	 * to the `onLoad()` callback.
+	 *
+	 * @param {string} url - The path/URL of the file to be loaded. This can also be a data URI.
+	 * @param {function({meshes:Array<Mesh>,materials:Array<Material>})} onLoad - Executed when the loading process has been finished.
+	 * @param {onProgressCallback} onProgress - Executed while the loading is in progress.
+	 * @param {onErrorCallback} onError - Executed when errors occur.
+	 */
 	load( url, onLoad, onProgress, onError ) {
 
 		const scope = this;
@@ -63,6 +87,10 @@ class LWOLoader extends Loader {
 		const modelName = url.split( path ).pop().split( '.' )[ 0 ];
 
 		const loader = new FileLoader( this.manager );
+		loader.setPriority( this.priority );
+		loader.setCache( this.cache );
+		loader.setRequestHeader( this.requestHeader );
+		loader.setWithCredentials( this.withCredentials );
 		loader.setPath( scope.path );
 		loader.setResponseType( 'arraybuffer' );
 
@@ -96,6 +124,14 @@ class LWOLoader extends Loader {
 
 	}
 
+	/**
+	 * Parses the given LWO data and returns the resulting meshes and materials.
+	 *
+	 * @param {ArrayBuffer} iffBuffer - The raw LWO data as an array buffer.
+	 * @param {string} path - The URL base path.
+	 * @param {string} modelName - The model name.
+	 * @return {{meshes:Array<Mesh>,materials:Array<Material>}} An object holding the parse meshes and materials.
+	 */
 	parse( iffBuffer, path, modelName ) {
 
 		_lwoTree = new IFFParser().parse( iffBuffer );
@@ -103,6 +139,8 @@ class LWOLoader extends Loader {
 		// console.log( 'lwoTree', lwoTree );
 
 		const textureLoader = new TextureLoader( this.manager ).setPath( this.resourcePath || path ).setCrossOrigin( this.crossOrigin );
+		textureLoader.setPriority( this.priority );
+		textureLoader.setCache( this.cache );
 
 		return new LWOTreeParser( textureLoader ).parse( modelName );
 
@@ -158,8 +196,6 @@ class LWOTreeParser {
 
 		} );
 
-		this.applyPivots( finalMeshes );
-
 		return finalMeshes;
 
 	}
@@ -170,8 +206,6 @@ class LWOTreeParser {
 
 		const materials = this.getMaterials( geometry.userData.matNames, layer.geometry.type );
 
-		this.duplicateUVs( geometry, materials );
-
 		if ( layer.geometry.type === 'points' ) mesh = new Points( geometry, materials );
 		else if ( layer.geometry.type === 'lines' ) mesh = new LineSegments( geometry, materials );
 		else mesh = new Mesh( geometry, materials );
@@ -179,38 +213,14 @@ class LWOTreeParser {
 		if ( layer.name ) mesh.name = layer.name;
 		else mesh.name = this.defaultLayerName + '_layer_' + layer.number;
 
-		mesh.userData.pivot = layer.pivot;
+		const pivot = layer.pivot;
+		if ( pivot[ 0 ] !== 0 || pivot[ 1 ] !== 0 || pivot[ 2 ] !== 0 ) {
+
+			mesh.pivot = new Vector3( pivot[ 0 ], pivot[ 1 ], pivot[ 2 ] );
+
+		}
 
 		return mesh;
-
-	}
-
-	// TODO: may need to be reversed in z to convert LWO to three.js coordinates
-	applyPivots( meshes ) {
-
-		meshes.forEach( function ( mesh ) {
-
-			mesh.traverse( function ( child ) {
-
-				const pivot = child.userData.pivot;
-
-				child.position.x += pivot[ 0 ];
-				child.position.y += pivot[ 1 ];
-				child.position.z += pivot[ 2 ];
-
-				if ( child.parent ) {
-
-					const parentPivot = child.parent.userData.pivot;
-
-					child.position.x -= parentPivot[ 0 ];
-					child.position.y -= parentPivot[ 1 ];
-					child.position.z -= parentPivot[ 2 ];
-
-				}
-
-			} );
-
-		} );
 
 	}
 
@@ -269,31 +279,6 @@ class LWOTreeParser {
 
 	}
 
-	// If the material has an aoMap, duplicate UVs
-	duplicateUVs( geometry, materials ) {
-
-		let duplicateUVs = false;
-
-		if ( ! Array.isArray( materials ) ) {
-
-			if ( materials.aoMap ) duplicateUVs = true;
-
-		} else {
-
-			materials.forEach( function ( material ) {
-
-				if ( material.aoMap ) duplicateUVs = true;
-
-			} );
-
-		}
-
-		if ( ! duplicateUVs ) return;
-
-		geometry.setAttribute( 'uv2', new BufferAttribute( geometry.attributes.uv.array, 2 ) );
-
-	}
-
 }
 
 class MaterialParser {
@@ -339,7 +324,7 @@ class MaterialParser {
 
 		const maps = this.parseTextureNodes( connections.maps );
 
-		this.parseAttributeImageMaps( connections.attributes, textures, maps, materialData.maps );
+		this.parseAttributeImageMaps( connections.attributes, textures, maps );
 
 		const attributes = this.parseAttributes( connections.attributes, maps );
 
@@ -349,6 +334,8 @@ class MaterialParser {
 		params = Object.assign( params, attributes );
 
 		const materialType = this.getMaterialType( connections.attributes );
+
+		if ( materialType !== MeshPhongMaterial ) delete params.refractionRatio; // PBR materials do not support "refractionRatio"
 
 		return new materialType( params );
 
@@ -462,17 +449,20 @@ class MaterialParser {
 
 				case 'Color':
 					maps.map = texture;
+					maps.map.colorSpace = SRGBColorSpace;
 					break;
 				case 'Roughness':
 					maps.roughnessMap = texture;
-					maps.roughness = 0.5;
+					maps.roughness = 1;
 					break;
 				case 'Specular':
 					maps.specularMap = texture;
+					maps.specularMap.colorSpace = SRGBColorSpace;
 					maps.specular = 0xffffff;
 					break;
 				case 'Luminous':
 					maps.emissiveMap = texture;
+					maps.emissiveMap.colorSpace = SRGBColorSpace;
 					maps.emissive = 0x808080;
 					break;
 				case 'Luminous Color':
@@ -480,7 +470,7 @@ class MaterialParser {
 					break;
 				case 'Metallic':
 					maps.metalnessMap = texture;
-					maps.metalness = 0.5;
+					maps.metalness = 1;
 					break;
 				case 'Transparency':
 				case 'Alpha':
@@ -518,7 +508,7 @@ class MaterialParser {
 
 				const mapData = attribute.maps[ 0 ];
 
-				const path = this.getTexturePathByIndex( mapData.imageIndex, textures );
+				const path = this.getTexturePathByIndex( mapData.imageIndex );
 				if ( ! path ) return;
 
 				const texture = this.loadTexture( path );
@@ -530,6 +520,7 @@ class MaterialParser {
 
 					case 'Color':
 						maps.map = texture;
+						maps.map.colorSpace = SRGBColorSpace;
 						break;
 					case 'Diffuse':
 						maps.aoMap = texture;
@@ -540,10 +531,12 @@ class MaterialParser {
 						break;
 					case 'Specular':
 						maps.specularMap = texture;
+						maps.specularMap.colorSpace = SRGBColorSpace;
 						maps.specular = 0xffffff;
 						break;
 					case 'Luminosity':
 						maps.emissiveMap = texture;
+						maps.emissiveMap.colorSpace = SRGBColorSpace;
 						maps.emissive = 0x808080;
 						break;
 					case 'Metallic':
@@ -579,7 +572,11 @@ class MaterialParser {
 
 			params.color = new Color().fromArray( attributes.Color.value );
 
-		} else params.color = new Color();
+		} else {
+
+			params.color = new Color();
+
+		}
 
 
 		if ( attributes.Transparency && attributes.Transparency.value !== 0 ) {
@@ -590,8 +587,6 @@ class MaterialParser {
 		}
 
 		if ( attributes[ 'Bump Height' ] ) params.bumpScale = attributes[ 'Bump Height' ].value * 0.1;
-
-		if ( attributes[ 'Refraction Index' ] ) params.refractionRatio = 1 / attributes[ 'Refraction Index' ].value;
 
 		this.parsePhysicalAttributes( params, attributes, maps );
 		this.parseStandardAttributes( params, attributes, maps );
@@ -642,6 +637,8 @@ class MaterialParser {
 	}
 
 	parsePhongAttributes( params, attributes, maps ) {
+
+		if ( attributes[ 'Refraction Index' ] ) params.refractionRatio = 0.98 / attributes[ 'Refraction Index' ].value;
 
 		if ( attributes.Diffuse ) params.color.multiplyScalar( attributes.Diffuse.value );
 
@@ -707,9 +704,11 @@ class MaterialParser {
 
 				if ( attributes.metalness !== undefined ) {
 
-					delete attributes.metalness;
+					attributes.metalness = 1; // For most transparent materials metalness should be set to 1 if not otherwise defined. If set to 0 no refraction will be visible
 
 				}
+
+				attributes.opacity = 1; // transparency fades out refraction, forcing opacity to 1 ensures a closer visual match to the material in Lightwave.
 
 			} else envMap.mapping = EquirectangularReflectionMapping;
 
@@ -796,15 +795,8 @@ class GeometryParser {
 
 		geometry.computeVertexNormals();
 
-		this.parseUVs( geometry, layer, indices );
-		this.parseMorphTargets( geometry, layer, indices );
-
-		// TODO: z may need to be reversed to account for coordinate system change
-		geometry.translate( - layer.pivot[ 0 ], - layer.pivot[ 1 ], - layer.pivot[ 2 ] );
-
-		// let userData = geometry.userData;
-		// geometry = geometry.toNonIndexed()
-		// geometry.userData = userData;
+		this.parseUVs( geometry, layer );
+		this.parseMorphTargets( geometry, layer );
 
 		return geometry;
 
@@ -1058,7 +1050,7 @@ function extractParentUrl( url, dir ) {
 
 	if ( index === - 1 ) return './';
 
-	return url.substr( 0, index );
+	return url.slice( 0, index );
 
 }
 

@@ -1,24 +1,33 @@
 import {
 	Curve,
 	Vector3
-} from '../../../build/three.module.js';
+} from 'three';
 
 /**
  * A bunch of parametric curves
  *
  * Formulas collected from various sources
  * http://mathworld.wolfram.com/HeartCurve.html
- * http://mathdl.maa.org/images/upload_library/23/stemkoski/knots/page6.html
  * http://en.wikipedia.org/wiki/Viviani%27s_curve
- * http://mathdl.maa.org/images/upload_library/23/stemkoski/knots/page4.html
  * http://www.mi.sanu.ac.rs/vismath/taylorapril2011/Taylor.pdf
  * https://prideout.net/blog/old/blog/index.html@p=44.html
  */
 
-// GrannyKnot
-
+/**
+ * A Granny Knot curve.
+ *
+ * @augments Curve
+ * @three_import import { GrannyKnot } from 'three/addons/curves/CurveExtras.js';
+ */
 class GrannyKnot extends Curve {
 
+	/**
+	 * This method returns a vector in 3D space for the given interpolation factor.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
 	getPoint( t, optionalTarget = new Vector3() ) {
 
 		const point = optionalTarget;
@@ -35,18 +44,40 @@ class GrannyKnot extends Curve {
 
 }
 
-// HeartCurve
-
+/**
+ * A heart curve.
+ *
+ * @augments Curve
+ * @three_import import { HeartCurve } from 'three/addons/curves/CurveExtras.js';
+ */
 class HeartCurve extends Curve {
 
+	/**
+	 * Constructs a new heart curve.
+	 *
+	 * @param {number} [scale=5] - The curve's scale.
+	 */
 	constructor( scale = 5 ) {
 
 		super();
 
+		/**
+		 * The curve's scale.
+		 *
+		 * @type {number}
+		 * @default 5
+		 */
 		this.scale = scale;
 
 	}
 
+	/**
+	 * This method returns a vector in 3D space for the given interpolation factor.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
 	getPoint( t, optionalTarget = new Vector3() ) {
 
 		const point = optionalTarget;
@@ -63,18 +94,40 @@ class HeartCurve extends Curve {
 
 }
 
-// Viviani's Curve
-
+/**
+ * A Viviani curve.
+ *
+ * @augments Curve
+ * @three_import import { VivianiCurve } from 'three/addons/curves/CurveExtras.js';
+ */
 class VivianiCurve extends Curve {
 
+	/**
+	 * Constructs a new Viviani curve.
+	 *
+	 * @param {number} [scale=70] - The curve's scale.
+	 */
 	constructor( scale = 70 ) {
 
 		super();
 
+		/**
+		 * The curve's scale.
+		 *
+		 * @type {number}
+		 * @default 70
+		 */
 		this.scale = scale;
 
 	}
 
+	/**
+	 * This method returns a vector in 3D space for the given interpolation factor.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
 	getPoint( t, optionalTarget = new Vector3() ) {
 
 		const point = optionalTarget;
@@ -92,10 +145,21 @@ class VivianiCurve extends Curve {
 
 }
 
-// KnotCurve
-
+/**
+ * A knot curve.
+ *
+ * @augments Curve
+ * @three_import import { KnotCurve } from 'three/addons/curves/CurveExtras.js';
+ */
 class KnotCurve extends Curve {
 
+	/**
+	 * This method returns a vector in 3D space for the given interpolation factor.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
 	getPoint( t, optionalTarget = new Vector3() ) {
 
 		const point = optionalTarget;
@@ -115,11 +179,21 @@ class KnotCurve extends Curve {
 
 }
 
-
-// HelixCurve
-
+/**
+ * A helix curve.
+ *
+ * @augments Curve
+ * @three_import import { HelixCurve } from 'three/addons/curves/CurveExtras.js';
+ */
 class HelixCurve extends Curve {
 
+	/**
+	 * This method returns a vector in 3D space for the given interpolation factor.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
 	getPoint( t, optionalTarget = new Vector3() ) {
 
 		const point = optionalTarget;
@@ -139,18 +213,40 @@ class HelixCurve extends Curve {
 
 }
 
-// TrefoilKnot
-
+/**
+ * A Trefoil Knot.
+ *
+ * @augments Curve
+ * @three_import import { TrefoilKnot } from 'three/addons/curves/CurveExtras.js';
+ */
 class TrefoilKnot extends Curve {
 
+	/**
+	 * Constructs a new Trefoil Knot.
+	 *
+	 * @param {number} [scale=10] - The curve's scale.
+	 */
 	constructor( scale = 10 ) {
 
 		super();
 
+		/**
+		 * The curve's scale.
+		 *
+		 * @type {number}
+		 * @default 10
+		 */
 		this.scale = scale;
 
 	}
 
+	/**
+	 * This method returns a vector in 3D space for the given interpolation factor.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
 	getPoint( t, optionalTarget = new Vector3() ) {
 
 		const point = optionalTarget;
@@ -167,18 +263,40 @@ class TrefoilKnot extends Curve {
 
 }
 
-// TorusKnot
-
+/**
+ * A torus knot.
+ *
+ * @augments Curve
+ * @three_import import { TorusKnot } from 'three/addons/curves/CurveExtras.js';
+ */
 class TorusKnot extends Curve {
 
+	/**
+	 * Constructs a new torus knot.
+	 *
+	 * @param {number} [scale=10] - The curve's scale.
+	 */
 	constructor( scale = 10 ) {
 
 		super();
 
+		/**
+		 * The curve's scale.
+		 *
+		 * @type {number}
+		 * @default 10
+		 */
 		this.scale = scale;
 
 	}
 
+	/**
+	 * This method returns a vector in 3D space for the given interpolation factor.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
 	getPoint( t, optionalTarget = new Vector3() ) {
 
 		const point = optionalTarget;
@@ -198,18 +316,40 @@ class TorusKnot extends Curve {
 
 }
 
-// CinquefoilKnot
-
+/**
+ * A Cinquefoil Knot.
+ *
+ * @augments Curve
+ * @three_import import { CinquefoilKnot } from 'three/addons/curves/CurveExtras.js';
+ */
 class CinquefoilKnot extends Curve {
 
+	/**
+	 * Constructs a new Cinquefoil Knot.
+	 *
+	 * @param {number} [scale=10] - The curve's scale.
+	 */
 	constructor( scale = 10 ) {
 
 		super();
 
+		/**
+		 * The curve's scale.
+		 *
+		 * @type {number}
+		 * @default 10
+		 */
 		this.scale = scale;
 
 	}
 
+	/**
+	 * This method returns a vector in 3D space for the given interpolation factor.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
 	getPoint( t, optionalTarget = new Vector3() ) {
 
 		const point = optionalTarget;
@@ -229,19 +369,40 @@ class CinquefoilKnot extends Curve {
 
 }
 
-
-// TrefoilPolynomialKnot
-
+/**
+ * A Trefoil Polynomial Knot.
+ *
+ * @augments Curve
+ * @three_import import { TrefoilPolynomialKnot } from 'three/addons/curves/CurveExtras.js';
+ */
 class TrefoilPolynomialKnot extends Curve {
 
+	/**
+	 * Constructs a new Trefoil Polynomial Knot.
+	 *
+	 * @param {number} [scale=10] - The curve's scale.
+	 */
 	constructor( scale = 10 ) {
 
 		super();
 
+		/**
+		 * The curve's scale.
+		 *
+		 * @type {number}
+		 * @default 10
+		 */
 		this.scale = scale;
 
 	}
 
+	/**
+	 * This method returns a vector in 3D space for the given interpolation factor.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
 	getPoint( t, optionalTarget = new Vector3() ) {
 
 		const point = optionalTarget;
@@ -265,18 +426,40 @@ function scaleTo( x, y, t ) {
 
 }
 
-// FigureEightPolynomialKnot
-
+/**
+ * A Figure Eight Polynomial Knot.
+ *
+ * @augments Curve
+ * @three_import import { FigureEightPolynomialKnot } from 'three/addons/curves/CurveExtras.js';
+ */
 class FigureEightPolynomialKnot extends Curve {
 
+	/**
+	 * Constructs a new Figure Eight Polynomial Knot.
+	 *
+	 * @param {number} [scale=1] - The curve's scale.
+	 */
 	constructor( scale = 1 ) {
 
 		super();
 
+		/**
+		 * The curve's scale.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
 		this.scale = scale;
 
 	}
 
+	/**
+	 * This method returns a vector in 3D space for the given interpolation factor.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
 	getPoint( t, optionalTarget = new Vector3() ) {
 
 		const point = optionalTarget;
@@ -293,18 +476,40 @@ class FigureEightPolynomialKnot extends Curve {
 
 }
 
-// DecoratedTorusKnot4a
-
+/**
+ * A Decorated Torus Knot 4a.
+ *
+ * @augments Curve
+ * @three_import import { DecoratedTorusKnot4a } from 'three/addons/curves/CurveExtras.js';
+ */
 class DecoratedTorusKnot4a extends Curve {
 
+	/**
+	 * Constructs a new Decorated Torus Knot 4a.
+	 *
+	 * @param {number} [scale=40] - The curve's scale.
+	 */
 	constructor( scale = 40 ) {
 
 		super();
 
+		/**
+		 * The curve's scale.
+		 *
+		 * @type {number}
+		 * @default 40
+		 */
 		this.scale = scale;
 
 	}
 
+	/**
+	 * This method returns a vector in 3D space for the given interpolation factor.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
 	getPoint( t, optionalTarget = new Vector3() ) {
 
 		const point = optionalTarget;
@@ -321,18 +526,40 @@ class DecoratedTorusKnot4a extends Curve {
 
 }
 
-// DecoratedTorusKnot4b
-
+/**
+ * A Decorated Torus Knot 4b.
+ *
+ * @augments Curve
+ * @three_import import { DecoratedTorusKnot4b } from 'three/addons/curves/CurveExtras.js';
+ */
 class DecoratedTorusKnot4b extends Curve {
 
+	/**
+	 * Constructs a new Decorated Torus Knot 4b.
+	 *
+	 * @param {number} [scale=40] - The curve's scale.
+	 */
 	constructor( scale = 40 ) {
 
 		super();
 
+		/**
+		 * The curve's scale.
+		 *
+		 * @type {number}
+		 * @default 40
+		 */
 		this.scale = scale;
 
 	}
 
+	/**
+	 * This method returns a vector in 3D space for the given interpolation factor.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
 	getPoint( t, optionalTarget = new Vector3() ) {
 
 		const point = optionalTarget;
@@ -349,19 +576,40 @@ class DecoratedTorusKnot4b extends Curve {
 
 }
 
-
-// DecoratedTorusKnot5a
-
+/**
+ * A Decorated Torus Knot 5a.
+ *
+ * @augments Curve
+ * @three_import import { DecoratedTorusKnot5a } from 'three/addons/curves/CurveExtras.js';
+ */
 class DecoratedTorusKnot5a extends Curve {
 
+	/**
+	 * Constructs a new Decorated Torus Knot 5a.
+	 *
+	 * @param {number} [scale=40] - The curve's scale.
+	 */
 	constructor( scale = 40 ) {
 
 		super();
 
+		/**
+		 * The curve's scale.
+		 *
+		 * @type {number}
+		 * @default 40
+		 */
 		this.scale = scale;
 
 	}
 
+	/**
+	 * This method returns a vector in 3D space for the given interpolation factor.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
 	getPoint( t, optionalTarget = new Vector3() ) {
 
 		const point = optionalTarget;
@@ -378,18 +626,40 @@ class DecoratedTorusKnot5a extends Curve {
 
 }
 
-// DecoratedTorusKnot5c
-
+/**
+ * A Decorated Torus Knot 5c.
+ *
+ * @augments Curve
+ * @three_import import { DecoratedTorusKnot5c } from 'three/addons/curves/CurveExtras.js';
+ */
 class DecoratedTorusKnot5c extends Curve {
 
+	/**
+	 * Constructs a new Decorated Torus Knot 5c.
+	 *
+	 * @param {number} [scale=40] - The curve's scale.
+	 */
 	constructor( scale = 40 ) {
 
 		super();
 
+		/**
+		 * The curve's scale.
+		 *
+		 * @type {number}
+		 * @default 40
+		 */
 		this.scale = scale;
 
 	}
 
+	/**
+	 * This method returns a vector in 3D space for the given interpolation factor.
+	 *
+	 * @param {number} t - A interpolation factor representing a position on the curve. Must be in the range `[0,1]`.
+	 * @param {Vector3} [optionalTarget] - The optional target vector the result is written to.
+	 * @return {Vector3} The position on the curve.
+	 */
 	getPoint( t, optionalTarget = new Vector3() ) {
 
 		const point = optionalTarget;
@@ -406,21 +676,19 @@ class DecoratedTorusKnot5c extends Curve {
 
 }
 
-const Curves = {
-	GrannyKnot: GrannyKnot,
-	HeartCurve: HeartCurve,
-	VivianiCurve: VivianiCurve,
-	KnotCurve: KnotCurve,
-	HelixCurve: HelixCurve,
-	TrefoilKnot: TrefoilKnot,
-	TorusKnot: TorusKnot,
-	CinquefoilKnot: CinquefoilKnot,
-	TrefoilPolynomialKnot: TrefoilPolynomialKnot,
-	FigureEightPolynomialKnot: FigureEightPolynomialKnot,
-	DecoratedTorusKnot4a: DecoratedTorusKnot4a,
-	DecoratedTorusKnot4b: DecoratedTorusKnot4b,
-	DecoratedTorusKnot5a: DecoratedTorusKnot5a,
-	DecoratedTorusKnot5c: DecoratedTorusKnot5c
+export {
+	GrannyKnot,
+	HeartCurve,
+	VivianiCurve,
+	KnotCurve,
+	HelixCurve,
+	TrefoilKnot,
+	TorusKnot,
+	CinquefoilKnot,
+	TrefoilPolynomialKnot,
+	FigureEightPolynomialKnot,
+	DecoratedTorusKnot4a,
+	DecoratedTorusKnot4b,
+	DecoratedTorusKnot5a,
+	DecoratedTorusKnot5c
 };
-
-export { Curves };

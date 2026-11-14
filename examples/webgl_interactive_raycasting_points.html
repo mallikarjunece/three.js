@@ -4,6 +4,10 @@
 		<title>three.js webgl - interactive - raycasting - points</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - interactive - raycasting - points">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_interactive_raycasting_points.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_interactive_raycasting_points.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 
@@ -11,18 +15,27 @@
 		<div id="container"></div>
 		<div id="info"><a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> webgl - interactive - raycasting - points </div>
 
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import Stats from './jsm/libs/stats.module.js';
+			import Stats from 'three/addons/libs/stats.module.js';
 
 			let renderer, scene, camera, stats;
 			let pointclouds;
 			let raycaster;
 			let intersection = null;
 			let spheresIndex = 0;
-			let clock;
+			let timer;
 			let toggle = 0;
 
 			const pointer = new THREE.Vector2();
@@ -35,7 +48,6 @@
 			const rotateY = new THREE.Matrix4().makeRotationY( 0.005 );
 
 			init();
-			animate();
 
 			function generatePointCloudGeometry( color, width, length ) {
 
@@ -150,7 +162,8 @@
 
 				scene = new THREE.Scene();
 
-				clock = new THREE.Clock();
+				timer = new THREE.Timer();
+				timer.connect( document );
 
 				camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
 				camera.position.set( 10, 10, 10 );
@@ -194,6 +207,7 @@
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setAnimationLoop( animate );
 				container.appendChild( renderer.domElement );
 
 				//
@@ -231,7 +245,7 @@
 
 			function animate() {
 
-				requestAnimationFrame( animate );
+				timer.update();
 
 				render();
 				stats.update();
@@ -245,7 +259,7 @@
 
 				raycaster.setFromCamera( pointer, camera );
 
-				const intersections = raycaster.intersectObjects( pointclouds );
+				const intersections = raycaster.intersectObjects( pointclouds, false );
 				intersection = ( intersections.length ) > 0 ? intersections[ 0 ] : null;
 
 				if ( toggle > 0.02 && intersection !== null ) {
@@ -266,7 +280,7 @@
 
 				}
 
-				toggle += clock.getDelta();
+				toggle += timer.getDelta();
 
 				renderer.render( scene, camera );
 

@@ -4,6 +4,10 @@
 		<title>three.js webgl - materials - canvas texture</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - materials - canvas texture">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_materials_texture_canvas.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_materials_texture_canvas.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 		<style>
 			#drawing-canvas {
@@ -25,16 +29,24 @@
 		</div>
 		<canvas id="drawing-canvas" height="128" width="128"></canvas>
 
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
 			let camera, scene, renderer, mesh, material;
 			const drawStartPos = new THREE.Vector2();
 
 			init();
 			setupCanvasDrawing();
-			animate();
 
 			function init() {
 
@@ -51,6 +63,7 @@
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setAnimationLoop( animate );
 				document.body.appendChild( renderer.domElement );
 
 				window.addEventListener( 'resize', onWindowResize );
@@ -130,8 +143,6 @@
 			}
 
 			function animate() {
-
-				requestAnimationFrame( animate );
 
 				mesh.rotation.x += 0.01;
 				mesh.rotation.y += 0.01;

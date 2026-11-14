@@ -4,6 +4,10 @@
 		<title>three.js webgl - helpers</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - helpers">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_helpers.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_helpers.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 	<body>
@@ -11,14 +15,23 @@
 			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - helpers
 		</div>
 
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
+			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-			import { VertexNormalsHelper } from './jsm/helpers/VertexNormalsHelper.js';
-			import { VertexTangentsHelper } from './jsm/helpers/VertexTangentsHelper.js';
+			import { VertexNormalsHelper } from 'three/addons/helpers/VertexNormalsHelper.js';
+			import { VertexTangentsHelper } from 'three/addons/helpers/VertexTangentsHelper.js';
 
 			let scene, renderer;
 			let camera, light;
@@ -26,13 +39,13 @@
 			let vth;
 
 			init();
-			animate();
 
 			function init() {
 
 				renderer = new THREE.WebGLRenderer();
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setAnimationLoop( animate );
 				document.body.appendChild( renderer.domElement );
 
 				//
@@ -122,8 +135,6 @@
 			}
 
 			function animate() {
-
-				requestAnimationFrame( animate );
 
 				const time = - performance.now() * 0.0003;
 

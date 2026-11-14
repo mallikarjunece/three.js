@@ -1,21 +1,88 @@
 import {
-	Color
-} from '../../../build/three.module.js';
+	Color,
+	LinearSRGBColorSpace,
+	MathUtils
+} from 'three';
 
+/**
+ * Represents a lookup table for colormaps. It is used to determine the color
+ * values from a range of data values.
+ *
+ * ```js
+ * const lut = new Lut( 'rainbow', 512 );
+ * const color = lut.getColor( 0.5 );
+ * ```
+ *
+ * @three_import import { Lut } from 'three/addons/math/Lut.js';
+ */
 class Lut {
 
+	/**
+	 * Constructs a new Lut.
+	 *
+	 * @param {('rainbow'|'cooltowarm'|'blackbody'|'grayscale')} [colormap='rainbow'] - Sets a colormap from predefined list of colormaps.
+	 * @param {number} [count=32] - Sets the number of colors used to represent the data array.
+	 */
  	constructor( colormap, count = 32 ) {
 
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isLut = true;
+
+
+		/**
+		 * The lookup table for the selected color map
+		 *
+		 * @type {Array<Color>}
+		 */
 		this.lut = [];
+
+		/**
+		 * The currently selected color map.
+		 *
+		 * @type {Array<Array<number>>}
+		 */
 		this.map = [];
+
+		/**
+		 * The number of colors of the current selected color map.
+		 *
+		 * @type {number}
+		 * @default 32
+		 */
 		this.n = 0;
+
+		/**
+		 * The minimum value to be represented with the lookup table.
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
 		this.minV = 0;
+
+		/**
+		 * The maximum value to be represented with the lookup table.
+		 *
+		 * @type {number}
+		 * @default 1
+		 */
 		this.maxV = 1;
 
 		this.setColorMap( colormap, count );
 
 	}
 
+	/**
+	 * Sets the given LUT.
+	 *
+	 * @param {Lut} value - The LUT to set.
+	 * @return {Lut} A reference to this LUT.
+	 */
 	set( value ) {
 
 		if ( value.isLut === true ) {
@@ -28,6 +95,12 @@ class Lut {
 
 	}
 
+	/**
+	 * Sets the minimum value to be represented with this LUT.
+	 *
+	 * @param {number} min - The minimum value to be represented with the lookup table.
+	 * @return {Lut} A reference to this LUT.
+	 */
 	setMin( min ) {
 
 		this.minV = min;
@@ -36,6 +109,12 @@ class Lut {
 
 	}
 
+	/**
+	 * Sets the maximum value to be represented with this LUT.
+	 *
+	 * @param {number} max - The maximum value to be represented with the lookup table.
+	 * @return {Lut} A reference to this LUT.
+	 */
 	setMax( max ) {
 
 		this.maxV = max;
@@ -44,28 +123,45 @@ class Lut {
 
 	}
 
+	/**
+	 * Configure the lookup table for the given color map and number of colors.
+	 *
+	 * @param {string} colormap - The name of the color map.
+	 * @param {number} [count=32] - The number of colors.
+	 * @return {Lut} A reference to this LUT.
+	 */
 	setColorMap( colormap, count = 32 ) {
 
 		this.map = ColorMapKeywords[ colormap ] || ColorMapKeywords.rainbow;
 		this.n = count;
 
 		const step = 1.0 / this.n;
+		const minColor = new Color();
+		const maxColor = new Color();
 
 		this.lut.length = 0;
 
-		for ( let i = 0; i <= 1; i += step ) {
+		// sample at 0
+
+		this.lut.push( new Color().setHex( this.map[ 0 ][ 1 ], LinearSRGBColorSpace ) );
+
+		// sample at 1/n, ..., (n-1)/n
+
+		for ( let i = 1; i < count; i ++ ) {
+
+			const alpha = i * step;
 
 			for ( let j = 0; j < this.map.length - 1; j ++ ) {
 
-				if ( i >= this.map[ j ][ 0 ] && i < this.map[ j + 1 ][ 0 ] ) {
+				if ( alpha > this.map[ j ][ 0 ] && alpha <= this.map[ j + 1 ][ 0 ] ) {
 
 					const min = this.map[ j ][ 0 ];
 					const max = this.map[ j + 1 ][ 0 ];
 
-					const minColor = new Color( this.map[ j ][ 1 ] );
-					const maxColor = new Color( this.map[ j + 1 ][ 1 ] );
+					minColor.setHex( this.map[ j ][ 1 ], LinearSRGBColorSpace );
+					maxColor.setHex( this.map[ j + 1 ][ 1 ], LinearSRGBColorSpace );
 
-					const color = minColor.lerp( maxColor, ( i - min ) / ( max - min ) );
+					const color = new Color().lerpColors( minColor, maxColor, ( alpha - min ) / ( max - min ) );
 
 					this.lut.push( color );
 
@@ -75,13 +171,23 @@ class Lut {
 
 		}
 
+		// sample at 1
+
+		this.lut.push( new Color().setHex( this.map[ this.map.length - 1 ][ 1 ], LinearSRGBColorSpace ) );
+
 		return this;
 
 	}
 
+	/**
+	 * Copies the given lut.
+	 *
+	 * @param {Lut} lut - The LUT to copy.
+	 * @return {Lut} A reference to this LUT.
+	 */
 	copy( lut ) {
 
-		this.lut = lut.lut;
+		this.lut = lut.lut.map( ( color ) => color.clone() );
 		this.map = lut.map;
 		this.n = lut.n;
 		this.minV = lut.minV;
@@ -91,27 +197,32 @@ class Lut {
 
 	}
 
+	/**
+	 * Returns an instance of Color for the given data value.
+	 *
+	 * @param {number} alpha - The value to lookup.
+	 * @return {Color} The color from the LUT.
+	 */
 	getColor( alpha ) {
 
-		if ( alpha <= this.minV ) {
-
-			alpha = this.minV;
-
-		} else if ( alpha >= this.maxV ) {
-
-			alpha = this.maxV;
-
-		}
+		alpha = MathUtils.clamp( alpha, this.minV, this.maxV );
 
 		alpha = ( alpha - this.minV ) / ( this.maxV - this.minV );
 
-		let colorPosition = Math.round( alpha * this.n );
-		colorPosition == this.n ? colorPosition -= 1 : colorPosition;
+		const colorPosition = Math.round( alpha * this.n );
 
 		return this.lut[ colorPosition ];
 
 	}
 
+	/**
+	 * Adds a color map to this Lut instance.
+	 *
+	 * @param {string} name - The name of the color map.
+	 * @param {Array<Array<number>>} arrayOfColors - An array of color values. Each value is an array
+	 * holding a threshold and the actual color value as a hexadecimal number.
+	 * @return {Lut} A reference to this LUT.
+	 */
 	addColorMap( name, arrayOfColors ) {
 
 		ColorMapKeywords[ name ] = arrayOfColors;
@@ -120,6 +231,11 @@ class Lut {
 
 	}
 
+	/**
+	 * Creates a canvas in order to visualize the lookup table as a texture.
+	 *
+	 * @return {HTMLCanvasElement} The created canvas.
+	 */
 	createCanvas() {
 
 		const canvas = document.createElement( 'canvas' );
@@ -132,6 +248,12 @@ class Lut {
 
 	}
 
+	/**
+	 * Updates the given canvas with the Lut's data.
+	 *
+	 * @param {HTMLCanvasElement} canvas - The canvas to update.
+	 * @return {HTMLCanvasElement} The updated canvas.
+	 */
 	updateCanvas( canvas ) {
 
 		const ctx = canvas.getContext( '2d', { alpha: false } );
@@ -140,11 +262,15 @@ class Lut {
 
 		const data = imageData.data;
 
-		let k = 0;
-
 		const step = 1.0 / this.n;
 
-		for ( let i = 1; i >= 0; i -= step ) {
+		const minColor = new Color();
+		const maxColor = new Color();
+		const finalColor = new Color();
+
+		for ( let k = 0; k < this.n; k ++ ) {
+
+			const i = ( this.n - 1 - k ) * step;
 
 			for ( let j = this.map.length - 1; j >= 0; j -- ) {
 
@@ -153,17 +279,15 @@ class Lut {
 					const min = this.map[ j - 1 ][ 0 ];
 					const max = this.map[ j ][ 0 ];
 
-					const minColor = new Color( this.map[ j - 1 ][ 1 ] );
-					const maxColor = new Color( this.map[ j ][ 1 ] );
+					minColor.setHex( this.map[ j - 1 ][ 1 ], LinearSRGBColorSpace );
+					maxColor.setHex( this.map[ j ][ 1 ], LinearSRGBColorSpace );
 
-					const color = minColor.lerp( maxColor, ( i - min ) / ( max - min ) );
+					finalColor.lerpColors( minColor, maxColor, ( i - min ) / ( max - min ) );
 
-					data[ k * 4 ] = Math.round( color.r * 255 );
-					data[ k * 4 + 1 ] = Math.round( color.g * 255 );
-					data[ k * 4 + 2 ] = Math.round( color.b * 255 );
+					data[ k * 4 ] = Math.round( finalColor.r * 255 );
+					data[ k * 4 + 1 ] = Math.round( finalColor.g * 255 );
+					data[ k * 4 + 2 ] = Math.round( finalColor.b * 255 );
 					data[ k * 4 + 3 ] = 255;
-
-					k += 1;
 
 				}
 
@@ -178,8 +302,6 @@ class Lut {
 	}
 
 }
-
-Lut.prototype.isLut = true;
 
 const ColorMapKeywords = {
 

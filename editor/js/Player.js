@@ -3,16 +3,16 @@ import { APP } from './libs/app.js';
 
 function Player( editor ) {
 
-	var signals = editor.signals;
+	const signals = editor.signals;
 
-	var container = new UIPanel();
+	const container = new UIPanel();
 	container.setId( 'player' );
 	container.setPosition( 'absolute' );
 	container.setDisplay( 'none' );
 
 	//
 
-	var player = new APP.Player();
+	const player = new APP.Player();
 	container.dom.appendChild( player.dom );
 
 	window.addEventListener( 'resize', function () {
@@ -21,11 +21,17 @@ function Player( editor ) {
 
 	} );
 
-	signals.startPlayer.add( function () {
+	signals.windowResize.add( function () {
+
+		player.setSize( container.dom.clientWidth, container.dom.clientHeight );
+
+	} );
+
+	signals.startPlayer.add( async function () {
 
 		container.setDisplay( '' );
 
-		player.load( editor.toJSON() );
+		await player.load( editor.toJSON() );
 		player.setSize( container.dom.clientWidth, container.dom.clientHeight );
 		player.play();
 

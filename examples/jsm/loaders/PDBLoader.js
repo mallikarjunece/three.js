@@ -2,22 +2,58 @@ import {
 	BufferGeometry,
 	FileLoader,
 	Float32BufferAttribute,
-	Loader
-} from '../../../build/three.module.js';
+	Loader,
+	Color,
+	SRGBColorSpace
+} from 'three';
 
+/**
+ * A loader for the PDB format.
+ *
+ * The [Protein Data Bank](https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format))
+ * file format is a textual file describing the three-dimensional structures of molecules.
+ *
+ * ```js
+ * const loader = new PDBLoader();
+ * const pdb = await loader.loadAsync( 'models/pdb/ethanol.pdb' );
+ *
+ * const geometryAtoms = pdb.geometryAtoms;
+ * const geometryBonds = pdb.geometryBonds;
+ * const json = pdb.json;
+ * ```
+ *
+ * @augments Loader
+ * @three_import import { PDBLoader } from 'three/addons/loaders/PDBLoader.js';
+ */
 class PDBLoader extends Loader {
 
+	/**
+	 * Constructs a new PDB loader.
+	 *
+	 * @param {LoadingManager} [manager] - The loading manager.
+	 */
 	constructor( manager ) {
 
 		super( manager );
 
 	}
 
+	/**
+	 * Starts loading from the given URL and passes the loaded PDB asset
+	 * to the `onLoad()` callback.
+	 *
+	 * @param {string} url - The path/URL of the file to be loaded. This can also be a data URI.
+	 * @param {function(Object)} onLoad - Executed when the loading process has been finished.
+	 * @param {onProgressCallback} onProgress - Executed while the loading is in progress.
+	 * @param {onErrorCallback} onError - Executed when errors occur.
+	 */
 	load( url, onLoad, onProgress, onError ) {
 
 		const scope = this;
 
 		const loader = new FileLoader( scope.manager );
+		loader.setPriority( scope.priority );
+		loader.setCache( scope.cache );
 		loader.setPath( scope.path );
 		loader.setRequestHeader( scope.requestHeader );
 		loader.setWithCredentials( scope.withCredentials );
@@ -47,9 +83,16 @@ class PDBLoader extends Loader {
 
 	}
 
-	// Based on CanvasMol PDB parser
-
+	/**
+	 * Parses the given PDB data and returns an object holding the atoms and
+	 * bond geometries as well as the raw atom data as JSON.
+	 *
+	 * @param {string} text - The raw PDB data as a string.
+	 * @return {Object} The result object.
+	 */
 	parse( text ) {
+
+		// Based on CanvasMol PDB parser
 
 		function trim( text ) {
 
@@ -59,7 +102,7 @@ class PDBLoader extends Loader {
 
 		function capitalize( text ) {
 
-			return text.charAt( 0 ).toUpperCase() + text.substr( 1 ).toLowerCase();
+			return text.charAt( 0 ).toUpperCase() + text.slice( 1 ).toLowerCase();
 
 		}
 
@@ -71,7 +114,7 @@ class PDBLoader extends Loader {
 
 		function parseBond( start, length, satom, i ) {
 
-			const eatom = parseInt( lines[ i ].substr( start, length ) );
+			const eatom = parseInt( lines[ i ].slice( start, start + length ) );
 
 			if ( eatom ) {
 
@@ -114,6 +157,8 @@ class PDBLoader extends Loader {
 
 			// atoms
 
+			const c = new Color();
+
 			for ( let i = 0, l = atoms.length; i < l; i ++ ) {
 
 				const atom = atoms[ i ];
@@ -128,7 +173,9 @@ class PDBLoader extends Loader {
 				const g = atom[ 3 ][ 1 ] / 255;
 				const b = atom[ 3 ][ 2 ] / 255;
 
-				colorsAtoms.push( r, g, b );
+				c.setRGB( r, g, b, SRGBColorSpace );
+
+				colorsAtoms.push( c.r, c.g, c.b );
 
 			}
 
@@ -183,18 +230,18 @@ class PDBLoader extends Loader {
 
 		for ( let i = 0, l = lines.length; i < l; i ++ ) {
 
-			if ( lines[ i ].substr( 0, 4 ) === 'ATOM' || lines[ i ].substr( 0, 6 ) === 'HETATM' ) {
+			if ( lines[ i ].slice( 0, 4 ) === 'ATOM' || lines[ i ].slice( 0, 6 ) === 'HETATM' ) {
 
-				const x = parseFloat( lines[ i ].substr( 30, 7 ) );
-				const y = parseFloat( lines[ i ].substr( 38, 7 ) );
-				const z = parseFloat( lines[ i ].substr( 46, 7 ) );
-				const index = parseInt( lines[ i ].substr( 6, 5 ) ) - 1;
+				const x = parseFloat( lines[ i ].slice( 30, 38 ) );
+				const y = parseFloat( lines[ i ].slice( 38, 46 ) );
+				const z = parseFloat( lines[ i ].slice( 46, 54 ) );
+				const index = parseInt( lines[ i ].slice( 6, 11 ) ) - 1;
 
-				let e = trim( lines[ i ].substr( 76, 2 ) ).toLowerCase();
+				let e = trim( lines[ i ].slice( 76, 78 ) ).toLowerCase();
 
 				if ( e === '' ) {
 
-					e = trim( lines[ i ].substr( 12, 2 ) ).toLowerCase();
+					e = trim( lines[ i ].slice( 12, 14 ) ).toLowerCase();
 
 				}
 
@@ -203,9 +250,9 @@ class PDBLoader extends Loader {
 				atoms.push( atomData );
 				_atomMap[ index ] = atomData;
 
-			} else if ( lines[ i ].substr( 0, 6 ) === 'CONECT' ) {
+			} else if ( lines[ i ].slice( 0, 6 ) === 'CONECT' ) {
 
-				const satom = parseInt( lines[ i ].substr( 6, 5 ) );
+				const satom = parseInt( lines[ i ].slice( 6, 11 ) );
 
 				parseBond( 11, 5, satom, i );
 				parseBond( 16, 5, satom, i );

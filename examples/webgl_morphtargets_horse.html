@@ -4,6 +4,10 @@
 		<title>three.js webgl - morph targets - horse</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - morph targets - horse">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_morphtargets_horse.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_morphtargets_horse.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 		<style>
 			body {
@@ -19,16 +23,25 @@
 
 		<div id="info">
 			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> webgl - morph targets - horse<br/>
-			model by <a href="https://mirada.com/" target="_blank" rel="noopener">mirada</a> from <a href="http://www.ro.me" target="_blank" rel="noopener">rome</a>
+			model by <a href="https://mirada.com/" target="_blank" rel="noopener">mirada</a> from <a href="https://rome.mrdoob.com" target="_blank" rel="noopener">rome</a>
 		</div>
+
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
 
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import Stats from './jsm/libs/stats.module.js';
+			import Stats from 'three/addons/libs/stats.module.js';
 
-			import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
+			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 			let container, stats;
 			let camera, scene, renderer;
@@ -39,7 +52,6 @@
 			let prevTime = Date.now();
 
 			init();
-			animate();
 
 			function init() {
 
@@ -56,16 +68,16 @@
 
 				//
 
-				const light1 = new THREE.DirectionalLight( 0xefefff, 1.5 );
+				const light1 = new THREE.DirectionalLight( 0xefefff, 5 );
 				light1.position.set( 1, 1, 1 ).normalize();
 				scene.add( light1 );
 
-				const light2 = new THREE.DirectionalLight( 0xffefef, 1.5 );
+				const light2 = new THREE.DirectionalLight( 0xffefef, 5 );
 				light2.position.set( - 1, - 1, - 1 ).normalize();
 				scene.add( light2 );
 
 				const loader = new GLTFLoader();
-				loader.load( "models/gltf/Horse.glb", function ( gltf ) {
+				loader.load( 'models/gltf/Horse.glb', function ( gltf ) {
 
 					mesh = gltf.scene.children[ 0 ];
 					mesh.scale.set( 1.5, 1.5, 1.5 );
@@ -82,8 +94,7 @@
 				renderer = new THREE.WebGLRenderer();
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
-
-				renderer.outputEncoding = THREE.sRGBEncoding;
+				renderer.setAnimationLoop( animate );
 
 				container.appendChild( renderer.domElement );
 
@@ -110,8 +121,6 @@
 			//
 
 			function animate() {
-
-				requestAnimationFrame( animate );
 
 				render();
 				stats.update();

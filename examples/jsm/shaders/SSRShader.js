@@ -1,13 +1,28 @@
 import {
 	Matrix4,
 	Vector2
-} from '../../../build/three.module.js';
+} from 'three';
+
+
 /**
+ * A collection of shaders used for SSR.
+ *
  * References:
- * https://lettier.github.io/3d-game-shaders-for-beginners/screen-space-reflection.html
+ * - [3D Game Shaders For Beginners, Screen Space Reflection (SSR)](https://lettier.github.io/3d-game-shaders-for-beginners/screen-space-reflection.html).
+ *
+ * @module SSRShader
+ * @three_import import * as SSRShader from 'three/addons/shaders/SSRShader.js';
  */
 
-var SSRShader = {
+/**
+ * SSR shader.
+ *
+ * @constant
+ * @type {ShaderMaterial~Shader}
+ */
+const SSRShader = {
+
+	name: 'SSRShader',
 
 	defines: {
 		MAX_STEP: 0,
@@ -81,7 +96,7 @@ var SSRShader = {
 			float x0=point.x,y0=point.y,z0=point.z;
 			float x=planePoint.x,y=planePoint.y,z=planePoint.z;
 			float d=-(a*x+b*y+c*z);
-			float distance=(a*x0+b*y0+c*z0+d)/sqrt(a*a+b*b+c*c);
+			float distance=a*x0+b*y0+c*z0+d;
 			return distance;
 		}
 		float getDepth( const in vec2 uv ) {
@@ -155,17 +170,17 @@ var SSRShader = {
 			#endif
 			d1=viewPositionToXY(d1viewPosition);
 
-			float totalLen=length(d1-d0);
 			float xLen=d1.x-d0.x;
 			float yLen=d1.y-d0.y;
 			float totalStep=max(abs(xLen),abs(yLen));
 			float xSpan=xLen/totalStep;
 			float ySpan=yLen/totalStep;
-			for(float i=0.;i<float(MAX_STEP);i++){
+			float sStep=1./totalStep;
+			float s=sStep; // start at sStep since loop starts at i=1
+			for(float i=1.;i<float(MAX_STEP);i++){
 				if(i>=totalStep) break;
 				vec2 xy=vec2(d0.x+i*xSpan,d0.y+i*ySpan);
 				if(xy.x<0.||xy.x>resolution.x||xy.y<0.||xy.y>resolution.y) break;
-				float s=length(xy-d0)/totalLen;
 				vec2 uv=xy/resolution;
 
 				float d = getDepth(uv);
@@ -175,7 +190,7 @@ var SSRShader = {
 				vec3 vP=getViewPosition( uv, d, cW );
 
 				#ifdef PERSPECTIVE_CAMERA
-					// https://www.comp.nus.edu.sg/~lowkl/publications/lowk_persp_interp_techrep.pdf
+					// https://comp.nus.edu.sg/~lowkl/publications/lowk_persp_interp_techrep.pdf
 					float recipVPZ=1./viewPosition.z;
 					float viewReflectRayZ=1./(recipVPZ+s*(1./d1viewPosition.z-recipVPZ));
 				#else
@@ -206,7 +221,7 @@ var SSRShader = {
 
 					if(hit){
 						vec3 vN=getViewNormal( uv );
-						if(dot(viewReflectDir,vN)>=0.) continue;
+						if(dot(viewReflectDir,vN)>=0.) break; // treat backfaces as opaque
 						float distance=pointPlaneDistance(vP,viewPosition,viewNormal);
 						if(distance>maxDistance) break;
 						float op=opacity;
@@ -225,13 +240,22 @@ var SSRShader = {
 						break;
 					}
 				}
+				s+=sStep;
 			}
 		}
 	`
 
 };
 
-var SSRDepthShader = {
+/**
+ * SSR Depth shader.
+ *
+ * @constant
+ * @type {ShaderMaterial~Shader}
+ */
+const SSRDepthShader = {
+
+	name: 'SSRDepthShader',
 
 	defines: {
 		'PERSPECTIVE_CAMERA': 1
@@ -298,7 +322,15 @@ var SSRDepthShader = {
 
 };
 
-var SSRBlurShader = {
+/**
+ * SSR Blur shader.
+ *
+ * @constant
+ * @type {ShaderMaterial~Shader}
+ */
+const SSRBlurShader = {
+
+	name: 'SSRBlurShader',
 
 	uniforms: {
 

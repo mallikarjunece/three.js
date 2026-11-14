@@ -4,6 +4,10 @@
 		<title>three.js webgl - custom attributes [lines]</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - custom attributes [lines]">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_custom_attributes_lines.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_custom_attributes_lines.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 
@@ -47,21 +51,32 @@
 
 		</script>
 
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import Stats from './jsm/libs/stats.module.js';
+			import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+			import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+
+			import Stats from 'three/addons/libs/stats.module.js';
 
 			let renderer, scene, camera, stats;
 
 			let line, uniforms;
 
-			const loader = new THREE.FontLoader();
+			const loader = new FontLoader();
 			loader.load( 'fonts/helvetiker_bold.typeface.json', function ( font ) {
 
 				init( font );
-				animate();
 
 			} );
 
@@ -93,12 +108,12 @@
 				} );
 
 
-				const geometry = new THREE.TextGeometry( 'three.js', {
+				const geometry = new TextGeometry( 'three.js', {
 
 					font: font,
 
 					size: 50,
-					height: 15,
+					depth: 15,
 					curveSegments: 10,
 
 					bevelThickness: 5,
@@ -134,6 +149,7 @@
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setAnimationLoop( animate );
 
 				const container = document.getElementById( 'container' );
 				container.appendChild( renderer.domElement );
@@ -157,8 +173,6 @@
 			}
 
 			function animate() {
-
-				requestAnimationFrame( animate );
 
 				render();
 				stats.update();

@@ -4,30 +4,43 @@
 		<title>three.js webgl - instancing - raycast</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - instancing - raycast">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_instancing_raycast.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_instancing_raycast.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 	<body>
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
+
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import Stats from './jsm/libs/stats.module.js';
-			import { GUI } from './jsm/libs/dat.gui.module.js';
-			import { OrbitControls } from "./jsm/controls/OrbitControls.js";
+			import Stats from 'three/addons/libs/stats.module.js';
+			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-			let camera, scene, renderer, stats;
+			let camera, scene, renderer, controls, stats;
 
 			let mesh;
-			const amount = parseInt( window.location.search.substr( 1 ) ) || 10;
+			const amount = parseInt( window.location.search.slice( 1 ) ) || 10;
 			const count = Math.pow( amount, 3 );
 
 			const raycaster = new THREE.Raycaster();
 			const mouse = new THREE.Vector2( 1, 1 );
 
 			const color = new THREE.Color();
+			const white = new THREE.Color().setHex( 0xffffff );
 
 			init();
-			animate();
 
 			function init() {
 
@@ -37,16 +50,12 @@
 
 				scene = new THREE.Scene();
 
-				const light1 = new THREE.HemisphereLight( 0xffffff, 0x000088 );
-				light1.position.set( - 1, 1.5, 1 );
-				scene.add( light1 );
-
-				const light2 = new THREE.HemisphereLight( 0xffffff, 0x880000, 0.5 );
-				light2.position.set( - 1, - 1.5, - 1 );
-				scene.add( light2 );
+				const light = new THREE.HemisphereLight( 0xffffff, 0x888888, 3 );
+				light.position.set( 0, 1, 0 );
+				scene.add( light );
 
 				const geometry = new THREE.IcosahedronGeometry( 0.5, 3 );
-				const material = new THREE.MeshPhongMaterial();
+				const material = new THREE.MeshPhongMaterial( { color: 0xffffff } );
 
 				mesh = new THREE.InstancedMesh( geometry, material, count );
 
@@ -84,9 +93,13 @@
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setAnimationLoop( animate );
 				document.body.appendChild( renderer.domElement );
 
-				new OrbitControls( camera, renderer.domElement );
+				controls = new OrbitControls( camera, renderer.domElement );
+				controls.enableDamping = true;
+				controls.enableZoom = false;
+				controls.enablePan = false;
 
 				stats = new Stats();
 				document.body.appendChild( stats.dom );
@@ -116,13 +129,7 @@
 
 			function animate() {
 
-				requestAnimationFrame( animate );
-
-				render();
-
-			}
-
-			function render() {
+				controls.update();
 
 				raycaster.setFromCamera( mouse, camera );
 
@@ -132,8 +139,15 @@
 
 					const instanceId = intersection[ 0 ].instanceId;
 
-					mesh.setColorAt( instanceId, color.setHex( Math.random() * 0xffffff ) );
-					mesh.instanceColor.needsUpdate = true;
+					mesh.getColorAt( instanceId, color );
+
+					if ( color.equals( white ) ) {
+
+						mesh.setColorAt( instanceId, color.setHex( Math.random() * 0xffffff ) );
+
+						mesh.instanceColor.needsUpdate = true;
+
+					}
 
 				}
 

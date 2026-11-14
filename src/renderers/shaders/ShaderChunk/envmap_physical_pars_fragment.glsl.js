@@ -1,19 +1,13 @@
 export default /* glsl */`
-#if defined( USE_ENVMAP )
+#ifdef USE_ENVMAP
 
-	#ifdef ENVMAP_MODE_REFRACTION
+	vec3 getIBLIrradiance( const in vec3 normal ) {
 
-		uniform float refractionRatio;
+		#ifdef ENVMAP_TYPE_PMREM
 
-	#endif
+			vec3 worldNormal = transformNormalByInverseViewMatrix( normal, viewMatrix );
 
-	vec3 getLightProbeIndirectIrradiance( const in GeometricContext geometry, const in int maxMIPLevel ) {
-
-		#if defined( ENVMAP_TYPE_CUBE_UV )
-
-			vec3 worldNormal = inverseTransformDirection( geometry.normal, viewMatrix );
-
-			vec4 envMapColor = textureCubeUV( envMap, worldNormal, 1.0 );
+			vec4 envMapColor = textureLod( envMap, envMapRotation * worldNormal, ENVMAP_MAX_LOD );
 
 			return PI * envMapColor.rgb * envMapIntensity;
 
@@ -25,28 +19,18 @@ export default /* glsl */`
 
 	}
 
-	vec3 getLightProbeIndirectRadiance( const in vec3 viewDir, const in vec3 normal, const in float roughness, const in int maxMIPLevel ) {
+	vec3 getIBLRadiance( const in vec3 viewDir, const in vec3 normal, const in float roughness ) {
 
-		#if defined( ENVMAP_TYPE_CUBE_UV )
+		#ifdef ENVMAP_TYPE_PMREM
 
-			vec3 reflectVec;
+			vec3 reflectVec = reflect( - viewDir, normal );
 
-			#ifdef ENVMAP_MODE_REFLECTION
+			// Mixing the reflection with the normal is more accurate and keeps rough objects from gathering light from behind their tangent plane.
+			reflectVec = normalize( mix( reflectVec, normal, pow4( roughness ) ) );
 
-				reflectVec = reflect( - viewDir, normal );
+			reflectVec = transformDirectionByInverseViewMatrix( reflectVec, viewMatrix );
 
-				// Mixing the reflection with the normal is more accurate and keeps rough objects from gathering light from behind their tangent plane.
-				reflectVec = normalize( mix( reflectVec, normal, roughness * roughness) );
-
-			#else
-
-				reflectVec = refract( - viewDir, normal, refractionRatio );
-
-			#endif
-
-			reflectVec = inverseTransformDirection( reflectVec, viewMatrix );
-
-			vec4 envMapColor = textureCubeUV( envMap, reflectVec, roughness );
+			vec4 envMapColor = textureLod( envMap, envMapRotation * reflectVec, roughnessToMip( roughness ) );
 
 			return envMapColor.rgb * envMapIntensity;
 
@@ -57,6 +41,77 @@ export default /* glsl */`
 		#endif
 
 	}
+
+	#ifdef USE_RETROREFLECTION
+
+		vec3 getIBLRetroRadiance( const in vec3 viewDir, const in vec3 normal, const in float roughness ) {
+
+			#ifdef ENVMAP_TYPE_PMREM
+
+				// The retroreflective lobe returns light toward its source, so the environment is sampled along the view direction
+				vec3 retroVec = normalize( mix( viewDir, normal, pow4( roughness ) ) );
+
+				retroVec = transformDirectionByInverseViewMatrix( retroVec, viewMatrix );
+
+				vec4 envMapColor = textureLod( envMap, envMapRotation * retroVec, roughnessToMip( roughness ) );
+
+				return envMapColor.rgb * envMapIntensity;
+
+			#else
+
+				return vec3( 0.0 );
+
+			#endif
+
+		}
+
+	#endif
+
+	#ifdef USE_ANISOTROPY
+
+		vec3 getIBLAnisotropyRadiance( const in vec3 viewDir, const in vec3 normal, const in float roughness, const in vec3 bitangent, const in float anisotropy ) {
+
+			#ifdef ENVMAP_TYPE_PMREM
+
+			  // https://google.github.io/filament/Filament.md.html#lighting/imagebasedlights/anisotropy
+				vec3 bentNormal = cross( bitangent, viewDir );
+				bentNormal = normalize( cross( bentNormal, bitangent ) );
+				bentNormal = normalize( mix( bentNormal, normal, pow2( pow2( 1.0 - anisotropy * ( 1.0 - roughness ) ) ) ) );
+
+				return getIBLRadiance( viewDir, bentNormal, roughness );
+
+			#else
+
+				return vec3( 0.0 );
+
+			#endif
+
+		}
+
+		#ifdef USE_RETROREFLECTION
+
+			vec3 getIBLAnisotropyRetroRadiance( const in vec3 viewDir, const in vec3 normal, const in float roughness, const in vec3 bitangent, const in float anisotropy ) {
+
+				#ifdef ENVMAP_TYPE_PMREM
+
+				  // https://google.github.io/filament/Filament.md.html#lighting/imagebasedlights/anisotropy
+					vec3 bentNormal = cross( bitangent, viewDir );
+					bentNormal = normalize( cross( bentNormal, bitangent ) );
+					bentNormal = normalize( mix( bentNormal, normal, pow2( pow2( 1.0 - anisotropy * ( 1.0 - roughness ) ) ) ) );
+
+					return getIBLRetroRadiance( viewDir, bentNormal, roughness );
+
+				#else
+
+					return vec3( 0.0 );
+
+				#endif
+
+			}
+
+		#endif
+
+	#endif
 
 #endif
 `;

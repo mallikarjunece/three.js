@@ -1,12 +1,21 @@
 import {
 	Vector3
-} from '../../../build/three.module.js';
+} from 'three';
 
 /**
- * Color correction
+ * @module ColorCorrectionShader
+ * @three_import import { ColorCorrectionShader } from 'three/addons/shaders/ColorCorrectionShader.js';
  */
 
+/**
+ * Color correction shader.
+ *
+ * @constant
+ * @type {ShaderMaterial~Shader}
+ */
 const ColorCorrectionShader = {
+
+	name: 'ColorCorrectionShader',
 
 	uniforms: {
 

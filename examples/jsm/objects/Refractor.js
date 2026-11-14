@@ -1,27 +1,69 @@
 import {
 	Color,
-	LinearFilter,
-	MathUtils,
 	Matrix4,
 	Mesh,
 	PerspectiveCamera,
 	Plane,
 	Quaternion,
-	RGBFormat,
 	ShaderMaterial,
 	UniformsUtils,
 	Vector3,
 	Vector4,
-	WebGLRenderTarget
-} from '../../../build/three.module.js';
+	WebGLRenderTarget,
+	HalfFloatType
+} from 'three';
 
+/**
+ * Can be used to create a flat, refractive surface like for special
+ * windows or water effects.
+ *
+ * Note that this class can only be used with {@link WebGLRenderer}.
+ * When using {@link WebGPURenderer}, use {@link viewportSharedTexture}.
+ *
+ * ```js
+ * const geometry = new THREE.PlaneGeometry( 100, 100 );
+ *
+ * const refractor = new Refractor( refractorGeometry, {
+ * 	color: 0xcbcbcb,
+ * 	textureWidth: 1024,
+ * 	textureHeight: 1024
+ * } );
+ *
+ * scene.add( refractor );
+ * ```
+ *
+ * @augments Mesh
+ * @three_import import { Refractor } from 'three/addons/objects/Refractor.js';
+ */
 class Refractor extends Mesh {
 
+	/**
+	 * Constructs a new refractor.
+	 *
+	 * @param {BufferGeometry} geometry - The refractor's geometry.
+	 * @param {Refractor~Options} [options] - The configuration options.
+	 */
 	constructor( geometry, options = {} ) {
 
 		super( geometry );
 
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isRefractor = true;
+
 		this.type = 'Refractor';
+
+		/**
+		 * The reflector's virtual camera.
+		 *
+		 * @type {PerspectiveCamera}
+		 */
+		this.camera = new PerspectiveCamera();
 
 		const scope = this;
 
@@ -30,10 +72,11 @@ class Refractor extends Mesh {
 		const textureHeight = options.textureHeight || 512;
 		const clipBias = options.clipBias || 0;
 		const shader = options.shader || Refractor.RefractorShader;
+		const multisample = ( options.multisample !== undefined ) ? options.multisample : 4;
 
 		//
 
-		const virtualCamera = new PerspectiveCamera();
+		const virtualCamera = this.camera;
 		virtualCamera.matrixAutoUpdate = false;
 		virtualCamera.userData.refractor = true;
 
@@ -44,23 +87,12 @@ class Refractor extends Mesh {
 
 		// render target
 
-		const parameters = {
-			minFilter: LinearFilter,
-			magFilter: LinearFilter,
-			format: RGBFormat
-		};
-
-		const renderTarget = new WebGLRenderTarget( textureWidth, textureHeight, parameters );
-
-		if ( ! MathUtils.isPowerOfTwo( textureWidth ) || ! MathUtils.isPowerOfTwo( textureHeight ) ) {
-
-			renderTarget.texture.generateMipmaps = false;
-
-		}
+		const renderTarget = new WebGLRenderTarget( textureWidth, textureHeight, { samples: multisample, type: HalfFloatType } );
 
 		// material
 
 		this.material = new ShaderMaterial( {
+			name: ( shader.name !== undefined ) ? shader.name : 'unspecified',
 			uniforms: UniformsUtils.clone( shader.uniforms ),
 			vertexShader: shader.vertexShader,
 			fragmentShader: shader.fragmentShader,
@@ -232,10 +264,6 @@ class Refractor extends Mesh {
 
 		this.onBeforeRender = function ( renderer, scene, camera ) {
 
-			// Render
-
-			renderTarget.texture.encoding = renderer.outputEncoding;
-
 			// ensure refractors are rendered only once per frame
 
 			if ( camera.userData.refractor === true ) return;
@@ -256,9 +284,25 @@ class Refractor extends Mesh {
 
 		};
 
+		/**
+		 * Returns the reflector's internal render target.
+		 *
+		 * @return {WebGLRenderTarget} The internal render target
+		 */
 		this.getRenderTarget = function () {
 
 			return renderTarget;
+
+		};
+
+		/**
+		 * Frees the GPU-related resources allocated by this instance. Call this
+		 * method whenever this instance is no longer used in your app.
+		 */
+		this.dispose = function () {
+
+			renderTarget.dispose();
+			scope.material.dispose();
 
 		};
 
@@ -266,9 +310,9 @@ class Refractor extends Mesh {
 
 }
 
-Refractor.prototype.isRefractor = true;
-
 Refractor.RefractorShader = {
+
+	name: 'RefractorShader',
 
 	uniforms: {
 
@@ -323,8 +367,23 @@ Refractor.RefractorShader = {
 			vec4 base = texture2DProj( tDiffuse, vUv );
 			gl_FragColor = vec4( blendOverlay( base.rgb, color ), 1.0 );
 
+			#include <tonemapping_fragment>
+			#include <colorspace_fragment>
+
 		}`
 
 };
+
+/**
+ * Constructor options of `Refractor`.
+ *
+ * @typedef {Object} Refractor~Options
+ * @property {number|Color|string} [color=0x7F7F7F] - The refractor's color.
+ * @property {number} [textureWidth=512] - The texture width. A higher value results in more clear refractions but is also more expensive.
+ * @property {number} [textureHeight=512] - The texture height. A higher value results in more clear refractions but is also more expensive.
+ * @property {number} [clipBias=0] - The clip bias.
+ * @property {Object} [shader] - Can be used to pass in a custom shader that defines how the refractive view is projected onto the reflector's geometry.
+ * @property {number} [multisample=4] - How many samples to use for MSAA. `0` disables MSAA.
+ **/
 
 export { Refractor };

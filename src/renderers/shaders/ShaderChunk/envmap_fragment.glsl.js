@@ -16,7 +16,7 @@ export default /* glsl */`
 		}
 
 		// Transforming Normal Vectors with the Inverse Transformation
-		vec3 worldNormal = inverseTransformDirection( normal, viewMatrix );
+		vec3 worldNormal = transformNormalByInverseViewMatrix( normal, viewMatrix );
 
 		#ifdef ENVMAP_MODE_REFLECTION
 
@@ -36,31 +36,21 @@ export default /* glsl */`
 
 	#ifdef ENVMAP_TYPE_CUBE
 
-		vec4 envColor = textureCube( envMap, vec3( flipEnvMap * reflectVec.x, reflectVec.yz ) );
+		vec4 envColor = textureCube( envMap, envMapRotation * reflectVec );
 
-		envColor = envMapTexelToLinear( envColor );
+		#ifdef ENVMAP_BLENDING_MULTIPLY
 
-	#elif defined( ENVMAP_TYPE_CUBE_UV )
+			outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, specularStrength * reflectivity );
 
-		vec4 envColor = textureCubeUV( envMap, reflectVec, 0.0 );
+		#elif defined( ENVMAP_BLENDING_MIX )
 
-	#else
+			outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity );
 
-		vec4 envColor = vec4( 0.0 );
+		#elif defined( ENVMAP_BLENDING_ADD )
 
-	#endif
+			outgoingLight += envColor.xyz * specularStrength * reflectivity;
 
-	#ifdef ENVMAP_BLENDING_MULTIPLY
-
-		outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, specularStrength * reflectivity );
-
-	#elif defined( ENVMAP_BLENDING_MIX )
-
-		outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity );
-
-	#elif defined( ENVMAP_BLENDING_ADD )
-
-		outgoingLight += envColor.xyz * specularStrength * reflectivity;
+		#endif
 
 	#endif
 

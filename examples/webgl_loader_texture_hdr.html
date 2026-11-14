@@ -4,22 +4,35 @@
 		<title>three.js webgl - materials - HDR texture loader</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - materials - HDR texture loader">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_loader_texture_hdr.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_loader_texture_hdr.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 	<body>
 
 		<div id="info">
 			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - webgl HDR (RGBE) texture loader example<br/>
-			Image courtesy of <a href="http://www.pauldebevec.com/Research/HDR/" target="_blank" rel="noopener">Paul Debevec</a>.
+			Image courtesy of <a href="https://www.pauldebevec.com/Research/HDR/" target="_blank" rel="noopener">Paul Debevec</a>.
 		</div>
+
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
 
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
-			import { GUI } from './jsm/libs/dat.gui.module.js';
+			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
-			import { RGBELoader } from './jsm/loaders/RGBELoader.js';
+			import { HDRLoader } from 'three/addons/loaders/HDRLoader.js';
 
 			const params = {
 				exposure: 2.0
@@ -39,7 +52,6 @@
 				renderer.toneMapping = THREE.ReinhardToneMapping;
 				renderer.toneMappingExposure = params.exposure;
 
-				renderer.outputEncoding = THREE.sRGBEncoding;
 
 				scene = new THREE.Scene();
 
@@ -47,8 +59,7 @@
 
 				camera = new THREE.OrthographicCamera( - aspect, aspect, 1, - 1, 0, 1 );
 
-				new RGBELoader()
-					.setDataType( THREE.UnsignedByteType ) // alt: FloatType, HalfFloatType
+				new HDRLoader()
 					.load( 'textures/memorial.hdr', function ( texture, textureData ) {
 
 						//console.log( textureData );

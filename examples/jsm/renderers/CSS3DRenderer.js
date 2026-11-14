@@ -1,19 +1,50 @@
 import {
 	Matrix4,
-	Object3D
-} from '../../../build/three.module.js';
+	Object3D,
+	Quaternion,
+	Vector3
+} from 'three';
+
+// Based on http://www.emagix.net/academic/mscs-project/item/camera-sync-with-css3-and-webgl-threejs
+
+const _position = new Vector3();
+const _quaternion = new Quaternion();
+const _scale = new Vector3();
 
 /**
- * Based on http://www.emagix.net/academic/mscs-project/item/camera-sync-with-css3-and-webgl-threejs
+ * The base 3D object that is supported by {@link CSS3DRenderer}.
+ *
+ * @augments Object3D
+ * @three_import import { CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
  */
-
 class CSS3DObject extends Object3D {
 
-	constructor( element ) {
+	/**
+	 * Constructs a new CSS3D object.
+	 *
+	 * @param {HTMLElement} [element] - The DOM element.
+	 */
+	constructor( element = document.createElement( 'div' ) ) {
 
 		super();
 
-		this.element = element || document.createElement( 'div' );
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isCSS3DObject = true;
+
+		/**
+		 * The DOM element which defines the appearance of this 3D object.
+		 *
+		 * @type {HTMLElement}
+		 * @readonly
+		 * @default true
+		 */
+		this.element = element;
 		this.element.style.position = 'absolute';
 		this.element.style.pointerEvents = 'auto';
 		this.element.style.userSelect = 'none';
@@ -24,9 +55,13 @@ class CSS3DObject extends Object3D {
 
 			this.traverse( function ( object ) {
 
-				if ( object.element instanceof Element && object.element.parentNode !== null ) {
+				if (
+					object.element &&
+					object.element instanceof object.element.ownerDocument.defaultView.Element &&
+					object.element.parentNode !== null
+				) {
 
-					object.element.parentNode.removeChild( object.element );
+					object.element.remove();
 
 				}
 
@@ -48,14 +83,39 @@ class CSS3DObject extends Object3D {
 
 }
 
-CSS3DObject.prototype.isCSS3DObject = true;
-
+/**
+ * A specialized version of {@link CSS3DObject} that represents
+ * DOM elements as sprites.
+ *
+ * @augments CSS3DObject
+ * @three_import import { CSS3DSprite } from 'three/addons/renderers/CSS3DRenderer.js';
+ */
 class CSS3DSprite extends CSS3DObject {
 
+	/**
+	 * Constructs a new CSS3D sprite object.
+	 *
+	 * @param {HTMLElement} [element] - The DOM element.
+	 */
 	constructor( element ) {
 
 		super( element );
 
+		/**
+		 * This flag can be used for type testing.
+		 *
+		 * @type {boolean}
+		 * @readonly
+		 * @default true
+		 */
+		this.isCSS3DSprite = true;
+
+		/**
+		 * The sprite's rotation in radians.
+		 *
+		 * @type {number}
+		 * @default 0
+		 */
 		this.rotation2D = 0;
 
 	}
@@ -72,16 +132,36 @@ class CSS3DSprite extends CSS3DObject {
 
 }
 
-CSS3DSprite.prototype.isCSS3DSprite = true;
-
 //
 
 const _matrix = new Matrix4();
 const _matrix2 = new Matrix4();
 
+/**
+ * This renderer can be used to apply hierarchical 3D transformations to DOM elements
+ * via the CSS3 [transform](https://www.w3schools.com/cssref/css3_pr_transform.asp) property.
+ * `CSS3DRenderer` is particularly interesting if you want to apply 3D effects to a website without
+ * canvas based rendering. It can also be used in order to combine DOM elements with WebGL content.
+ *
+ * There are, however, some important limitations:
+ *
+ * - It's not possible to use the material system of *three.js*.
+ * - It's also not possible to use geometries.
+ * - The renderer only supports 100% browser and display zoom.
+ *
+ * So `CSS3DRenderer` is just focused on ordinary DOM elements. These elements are wrapped into special
+ * 3D objects ({@link CSS3DObject} or {@link CSS3DSprite}) and then added to the scene graph.
+ *
+ * @three_import import { CSS3DRenderer } from 'three/addons/renderers/CSS3DRenderer.js';
+ */
 class CSS3DRenderer {
 
-	constructor() {
+	/**
+	 * Constructs a new CSS3D renderer.
+	 *
+	 * @param {CSS3DRenderer~Parameters} [parameters] - The parameters.
+	 */
+	constructor( parameters = {} ) {
 
 		const _this = this;
 
@@ -89,22 +169,37 @@ class CSS3DRenderer {
 		let _widthHalf, _heightHalf;
 
 		const cache = {
-			camera: { fov: 0, style: '' },
+			camera: { style: '' },
 			objects: new WeakMap()
 		};
 
-		const domElement = document.createElement( 'div' );
+		const domElement = parameters.element !== undefined ? parameters.element : document.createElement( 'div' );
+
 		domElement.style.overflow = 'hidden';
 
+		/**
+		 * The DOM where the renderer appends its child-elements.
+		 *
+		 * @type {HTMLElement}
+		 */
 		this.domElement = domElement;
+
+		const viewElement = document.createElement( 'div' );
+		viewElement.style.transformOrigin = '0 0';
+		viewElement.style.pointerEvents = 'none';
+		domElement.appendChild( viewElement );
 
 		const cameraElement = document.createElement( 'div' );
 
 		cameraElement.style.transformStyle = 'preserve-3d';
-		cameraElement.style.pointerEvents = 'none';
 
-		domElement.appendChild( cameraElement );
+		viewElement.appendChild( cameraElement );
 
+		/**
+		 * Returns an object containing the width and height of the renderer.
+		 *
+		 * @return {{width:number,height:number}} The size of the renderer.
+		 */
 		this.getSize = function () {
 
 			return {
@@ -114,19 +209,32 @@ class CSS3DRenderer {
 
 		};
 
+		/**
+		 * Renders the given scene using the given camera.
+		 *
+		 * @param {Object3D} scene - A scene or any other type of 3D object.
+		 * @param {Camera} camera - The camera.
+		 */
 		this.render = function ( scene, camera ) {
 
 			const fov = camera.projectionMatrix.elements[ 5 ] * _heightHalf;
 
-			if ( cache.camera.fov !== fov ) {
+			if ( camera.view && camera.view.enabled ) {
 
-				domElement.style.perspective = camera.isPerspectiveCamera ? fov + 'px' : '';
-				cache.camera.fov = fov;
+				// view offset
+				viewElement.style.transform = `translate( ${ - camera.view.offsetX * ( _width / camera.view.width ) }px, ${ - camera.view.offsetY * ( _height / camera.view.height ) }px )`;
+
+				// view fullWidth and fullHeight, view width and height
+				viewElement.style.transform += `scale( ${ camera.view.fullWidth / camera.view.width }, ${ camera.view.fullHeight / camera.view.height } )`;
+
+			} else {
+
+				viewElement.style.transform = '';
 
 			}
 
-			if ( scene.autoUpdate === true ) scene.updateMatrixWorld();
-			if ( camera.parent === null ) camera.updateMatrixWorld();
+			if ( scene.matrixWorldAutoUpdate === true ) scene.updateMatrixWorld();
+			if ( camera.parent === null && camera.matrixWorldAutoUpdate === true ) camera.updateMatrixWorld();
 
 			let tx, ty;
 
@@ -137,11 +245,13 @@ class CSS3DRenderer {
 
 			}
 
+			const scaleByViewOffset = camera.view && camera.view.enabled ? camera.view.height / camera.view.fullHeight : 1;
 			const cameraCSSMatrix = camera.isOrthographicCamera ?
-				'scale(' + fov + ')' + 'translate(' + epsilon( tx ) + 'px,' + epsilon( ty ) + 'px)' + getCameraCSSMatrix( camera.matrixWorldInverse ) :
-				'translateZ(' + fov + 'px)' + getCameraCSSMatrix( camera.matrixWorldInverse );
+				`scale( ${ scaleByViewOffset } )` + 'scale(' + fov + ')' + 'translate(' + epsilon( tx ) + 'px,' + epsilon( ty ) + 'px)' + getCameraCSSMatrix( camera.matrixWorldInverse ) :
+				`scale( ${ scaleByViewOffset } )` + 'translateZ(' + fov + 'px)' + getCameraCSSMatrix( camera.matrixWorldInverse );
+			const perspective = camera.isPerspectiveCamera ? 'perspective(' + fov + 'px) ' : '';
 
-			const style = cameraCSSMatrix +
+			const style = perspective + cameraCSSMatrix +
 				'translate(' + _widthHalf + 'px,' + _heightHalf + 'px)';
 
 			if ( cache.camera.style !== style ) {
@@ -156,6 +266,12 @@ class CSS3DRenderer {
 
 		};
 
+		/**
+		 * Resizes the renderer to the given width and height.
+		 *
+		 * @param {number} width - The width of the renderer.
+		 * @param {number} height - The height of the renderer.
+		 */
 		this.setSize = function ( width, height ) {
 
 			_width = width;
@@ -165,6 +281,9 @@ class CSS3DRenderer {
 
 			domElement.style.width = width + 'px';
 			domElement.style.height = height + 'px';
+
+			viewElement.style.width = width + 'px';
+			viewElement.style.height = height + 'px';
 
 			cameraElement.style.width = width + 'px';
 			cameraElement.style.height = height + 'px';
@@ -228,60 +347,87 @@ class CSS3DRenderer {
 
 		}
 
+		function hideObject( object ) {
+
+			if ( object.isCSS3DObject ) object.element.style.display = 'none';
+
+			for ( let i = 0, l = object.children.length; i < l; i ++ ) {
+
+				hideObject( object.children[ i ] );
+
+			}
+
+		}
+
 		function renderObject( object, scene, camera, cameraCSSMatrix ) {
+
+			if ( object.visible === false ) {
+
+				hideObject( object );
+
+				return;
+
+			}
 
 			if ( object.isCSS3DObject ) {
 
-				object.onBeforeRender( _this, scene, camera );
-
-				let style;
-
-				if ( object.isCSS3DSprite ) {
-
-					// http://swiftcoder.wordpress.com/2008/11/25/constructing-a-billboard-matrix/
-
-					_matrix.copy( camera.matrixWorldInverse );
-					_matrix.transpose();
-
-					if ( object.rotation2D !== 0 ) _matrix.multiply( _matrix2.makeRotationZ( object.rotation2D ) );
-
-					_matrix.copyPosition( object.matrixWorld );
-					_matrix.scale( object.scale );
-
-					_matrix.elements[ 3 ] = 0;
-					_matrix.elements[ 7 ] = 0;
-					_matrix.elements[ 11 ] = 0;
-					_matrix.elements[ 15 ] = 1;
-
-					style = getObjectCSSMatrix( _matrix );
-
-				} else {
-
-					style = getObjectCSSMatrix( object.matrixWorld );
-
-				}
+				const visible = ( object.layers.test( camera.layers ) === true );
 
 				const element = object.element;
-				const cachedObject = cache.objects.get( object );
+				element.style.display = visible === true ? '' : 'none';
 
-				if ( cachedObject === undefined || cachedObject.style !== style ) {
+				if ( visible === true ) {
 
-					element.style.transform = style;
+					object.onBeforeRender( _this, scene, camera );
 
-					const objectData = { style: style };
-					cache.objects.set( object, objectData );
+					let style;
+
+					if ( object.isCSS3DSprite ) {
+
+						// http://swiftcoder.wordpress.com/2008/11/25/constructing-a-billboard-matrix/
+
+						_matrix.copy( camera.matrixWorldInverse );
+						_matrix.transpose();
+
+						if ( object.rotation2D !== 0 ) _matrix.multiply( _matrix2.makeRotationZ( object.rotation2D ) );
+
+						object.matrixWorld.decompose( _position, _quaternion, _scale );
+						_matrix.setPosition( _position );
+						_matrix.scale( _scale );
+
+						_matrix.elements[ 3 ] = 0;
+						_matrix.elements[ 7 ] = 0;
+						_matrix.elements[ 11 ] = 0;
+						_matrix.elements[ 15 ] = 1;
+
+						style = getObjectCSSMatrix( _matrix );
+
+					} else {
+
+						style = getObjectCSSMatrix( object.matrixWorld );
+
+					}
+
+					const cachedObject = cache.objects.get( object );
+
+					if ( cachedObject === undefined || cachedObject.style !== style ) {
+
+						element.style.transform = style;
+
+						const objectData = { style: style };
+						cache.objects.set( object, objectData );
+
+					}
+
+					if ( element.parentNode !== cameraElement ) {
+
+						cameraElement.appendChild( element );
+
+					}
+
+					object.onAfterRender( _this, scene, camera );
 
 				}
-
-				element.style.display = object.visible ? '' : 'none';
-
-				if ( element.parentNode !== cameraElement ) {
-
-					cameraElement.appendChild( element );
-
-				}
-
-				object.onAfterRender( _this, scene, camera );
 
 			}
 
@@ -296,5 +442,13 @@ class CSS3DRenderer {
 	}
 
 }
+
+/**
+ * Constructor parameters of `CSS3DRenderer`.
+ *
+ * @typedef {Object} CSS3DRenderer~Parameters
+ * @property {HTMLElement} [element] - A DOM element where the renderer appends its child-elements.
+ * If not passed in here, a new div element will be created.
+ **/
 
 export { CSS3DObject, CSS3DSprite, CSS3DRenderer };

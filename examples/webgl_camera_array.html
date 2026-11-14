@@ -4,20 +4,31 @@
 		<title>three.js webgl - arraycamera</title>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta property="og:title" content="three.js webgl - arraycamera">
+		<meta property="og:type" content="website">
+		<meta property="og:url" content="https://threejs.org/examples/webgl_camera_array.html">
+		<meta property="og:image" content="https://threejs.org/examples/screenshots/webgl_camera_array.jpg">
 		<link type="text/css" rel="stylesheet" href="main.css">
 	</head>
 	<body>
+		<script type="importmap">
+			{
+				"imports": {
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
+				}
+			}
+		</script>
 
 		<script type="module">
 
-			import * as THREE from '../build/three.module.js';
+			import * as THREE from 'three';
 
 			let camera, scene, renderer;
 			let mesh;
 			const AMOUNT = 6;
 
 			init();
-			animate();
 
 			function init() {
 
@@ -51,9 +62,9 @@
 
 				scene = new THREE.Scene();
 
-				scene.add( new THREE.AmbientLight( 0x222244 ) );
+				scene.add( new THREE.AmbientLight( 0x999999 ) );
 
-				const light = new THREE.DirectionalLight();
+				const light = new THREE.DirectionalLight( 0xffffff, 3 );
 				light.position.set( 0.5, 0.5, 1 );
 				light.castShadow = true;
 				light.shadow.camera.zoom = 4; // tighter shadow map
@@ -78,6 +89,7 @@
 				renderer = new THREE.WebGLRenderer();
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.setAnimationLoop( animate );
 				renderer.shadowMap.enabled = true;
 				document.body.appendChild( renderer.domElement );
 
@@ -125,8 +137,6 @@
 				mesh.rotation.z += 0.01;
 
 				renderer.render( scene, camera );
-
-				requestAnimationFrame( animate );
 
 			}
 
